@@ -10,10 +10,12 @@ import customerData from '../data/customer-data';
 import HeroImage from '../svg/HeroImage';
 import SvgCharts from '../svg/SvgCharts';
 import {Widget, Popover, PopupButton} from '@typeform/embed-react'
+import Header from "../components/layout/Header"
 
 const Index = () => (
   <>
-    <section className="pt-20 md:pt-40">
+    <Header />
+    <section className="pt-20 ">
       <div className="container mx-auto px-8 lg:flex ">
         <div className="text-center ">
           <h1 className="text-4xl lg:text-5xl xl:text-6xl font-bold leading-none">
@@ -25,7 +27,7 @@ const Index = () => (
 
         </div>
       </div>
-        <div className="container mx-auto px-8 lg:flex my-6 ">
+        <div className="container mx-auto px-8 lg:flex my-16 ">
           <Widget id="AqmhHkBs" height="500" className="flex-auto"/>
         </div>
     </section>
@@ -64,7 +66,7 @@ const Index = () => (
     <h2 className="text-3xl lg:text-5xl font-semibold">How it works</h2></div>
 
     <SplitSection
-      id="services"
+      id="how"
       primarySlot={
         <div className="lg:pr-32 xl:pr-48">
           <h3 className="text-3xl font-semibold leading-tight">Add information</h3>
