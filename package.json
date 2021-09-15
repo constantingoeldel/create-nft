@@ -9,6 +9,7 @@
     "build": "gatsby build"
   },
   "dependencies": {
+    "@typeform/embed-react": "^1.1.1",
     "gatsby": "^3.0.3",
     "gatsby-plugin-emotion": "^6.0.0",
     "gatsby-theme-codebushi": "^1.0.0",
