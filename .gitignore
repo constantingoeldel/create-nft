@@ -72,3 +72,6 @@ yarn-error.log
 # Yarn Integrity file
 .yarn-integrity
 yarn.lock
+
+/server/policy
+/server/priv
