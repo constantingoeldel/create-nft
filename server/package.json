@@ -12,6 +12,7 @@
   "dependencies": {
     "cardanocli-js": "^4.0.0",
     "dotenv": "^10.0.0",
+    "express": "^4.17.1",
     "unirest": "^0.6.0"
   }
 }
