@@ -1,8 +1,11 @@
 import { config } from 'dotenv'
 import unirest from 'unirest'
+import { createWriteStream } from 'fs'
+import request from 'request'
 config()
 
-export default async function uploadIpfs(file) {
+export default async function uploadIpfs(uri) {
+  const file = await downloadFile(uri)
   const artHash = await new Promise((resolve, reject) => {
     unirest('POST', 'https://ipfs.blockfrost.io/api/v0/ipfs/add')
       .headers({
@@ -27,4 +30,14 @@ export default async function uploadIpfs(file) {
         if (res.error) throw new Error(res.error)
       })
   }
+}
+async function downloadFile(uri) {
+  const extention = uri.split('.')[uri.split('.').length - 1]
+  const filename = './tmp/' + uri.split('/')[5] + '.' + extention
+  await new Promise((resolve, reject) => {
+    request(uri)
+      .pipe(createWriteStream(filename))
+      .on('close', (err) => (err ? reject() : resolve()))
+  })
+  return filename
 }

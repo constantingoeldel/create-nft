@@ -1,6 +1,7 @@
 import express from 'express'
 import { config } from 'dotenv'
 import crypto from 'crypto'
+import { mintNFT, mintToken } from './mint.js'
 config()
 
 const server = express()
@@ -19,12 +20,13 @@ server.listen(port, () => {
 function handleSubmission({ body, headers }) {
   // TODO trust needs work
   const trust = verifyIntegrity(body, headers['typeform-signature'])
-  const answers = getAnswers(body)
-  console.log(answers)
+  const params = getAnswers(body)
+  params.paid && params.type === 'NFT' ? mintNFT(params) : mintToken(params)
 }
 
 function getAnswers(payload) {
   const answers = {
+    id: '',
     type: 'NFT',
     amount: 1,
     name: '',
@@ -34,9 +36,12 @@ function getAnswers(payload) {
     payment: '',
     file: '',
     addr: '',
+    price: 0,
     paid: false,
   }
   const answersRaw = payload.form_response.answers
+  answers.id = payload.form_response.hidden.id
+  answers.price = payload.form_response.hidden.adaprice
   answersRaw.forEach((answer) => {
     const id = answer.field.id
     if (answer.type === 'number') {
@@ -67,3 +72,5 @@ function verifyIntegrity(body, sig) {
       .digest('base64')
   )
 }
+
+// Response, ada checking, sending to customer, integration with typeform, hosting, token minting, iframe size, id and stuff

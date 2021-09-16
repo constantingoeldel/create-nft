@@ -10,24 +10,22 @@ const cardano = new CardanoCliJs({ shelleyGenesisPath, socketPath })
 
 const tip = cardano.queryTip().slot
 const keyHash = process.env.POLICY_KEY
-// const artHash = await uploadIpfs('/home/constantin/Downloads/ausweis.jpg')
-const assetName = 'Test123'
 
-const [policyId, policy] = createPolicy(keyHash, tip)
-const metadata = createMetadata(assetName, policyId, { name: 'Test', image: 'ipfs://' })
+const wallet = cardano.wallet('Constantin')
 
-// const txIn = cardano.wallet('name')
-const NFT = policyId + '.' + assetName
-const protocolParameters = cardano.queryProtocolParameters()
-const transaction = {
-  txIn: [{ txHash: process.env.TX_IN, txId: '0' }],
-  txOut: [{ address: process.env.BASE_ADDR, value: { lovelace: 2834587, [NFT]: 1 } }],
-  mint: [{ action: 'mint', quantity: 1, asset: NFT, script: policy }],
-  metadata: metadata,
+function createTransaction(tx) {
+  const rawTx = cardano.transactionBuildRaw(tx)
+  const fee = cardano.transactionCalculateMinFee({ ...tx, txBody: rawTx })
+  tx.txOut[0].value.lovelace -= fee
+  return cardano.transactionBuildRaw({ ...tx, fee })
 }
-console.log(transaction)
-const rawTx = cardano.transactionBuildRaw(transaction)
-console.log(rawTx)
+
+const signTransaction = (wallet, tx) => {
+  return cardano.transactionSign({
+    signingKeys: [wallet.payment.skey, wallet.payment.skey],
+    txBody: tx,
+  })
+}
 
 function createPolicy(keyHash, tip) {
   const policy = {
@@ -56,3 +54,38 @@ function createMetadata(assetName, policyId, optionalMetadata) {
     },
   }
 }
+
+export async function mintNFT({ name, description, author, file }) {
+  const assetName = name.replaceAll(' ', '_')
+  const artHash = await uploadIpfs(file)
+  const [policyId, policy] = createPolicy(keyHash, tip)
+  const NFT = policyId + '.' + assetName
+  const metadata = createMetadata(assetName, policyId, {
+    name: name,
+    image: 'ipfs://' + artHash,
+    description,
+    author,
+  })
+  const tx = {
+    txIn: wallet.balance().utxo,
+    txOut: [{ address: wallet.paymentAddr, value: { ...wallet.balance().value, [NFT]: 1 } }],
+    mint: [{ action: 'mint', quantity: 1, asset: NFT, script: policy }],
+    metadata: metadata,
+    wittnessCount: 2,
+  }
+  console.log(assetName, artHash, policy, metadata, tx, NFT)
+  const raw = createTransaction(tx)
+  const signed = signTransaction(wallet, raw)
+  const txHash = cardano.transactionSubmit(signed)
+  return txHash
+}
+
+export async function mintToken() {}
+
+mintNFT({
+  name: 'Test',
+  author: 'ME',
+  description: 'This is a test',
+  file:
+    'https://api.typeform.com/responses/files/2f2194276fa1733f00e95f8535b53bcd8fde4d20ec77bd74d712c5268f4dc35b/canvas.png',
+})
