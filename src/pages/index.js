@@ -15,6 +15,7 @@ import Header from '../components/layout/Header'
 import { v4 as uuid } from 'uuid'
 
 const Index = () => {
+  const price = (4 + Math.random()).toFixed(4)
   const id = uuid()
   return (
     <>
@@ -34,7 +35,7 @@ const Index = () => {
         <div className="container mx-auto px-8 lg:flex my-16 ">
           <Widget
             id="AqmhHkBs"
-            hidden={{ adaprice: 10, id: id }}
+            hidden={{ adaprice: price.toString(), id: id }}
             height="500"
             className="flex-auto"
           />
