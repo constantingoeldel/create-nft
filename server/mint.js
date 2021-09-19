@@ -4,9 +4,8 @@ import CardanoCliJs from 'cardanocli-js'
 config()
 
 const shelleyGenesisPath =
-  '/home/constantin/.cardano/configuration/cardano/mainnet-shelley-genesis.json'
-const socketPath = '/home/constantin/.cardano/mainnet/db/node.socket'
-const cardano = new CardanoCliJs({ shelleyGenesisPath, socketPath })
+  '/home/constantin/cardano/configuration/cardano/mainnet-shelley-genesis.json'
+const cardano = new CardanoCliJs({ shelleyGenesisPath })
 
 const tip = cardano.queryTip().slot
 const keyHash = process.env.POLICY_KEY
@@ -16,13 +15,14 @@ const wallet = cardano.wallet('Constantin')
 function createTransaction(tx) {
   const rawTx = cardano.transactionBuildRaw(tx)
   const fee = cardano.transactionCalculateMinFee({ ...tx, txBody: rawTx })
+  console.log('Transaction cost: ', fee)
   tx.txOut[0].value.lovelace -= fee
   return cardano.transactionBuildRaw({ ...tx, fee })
 }
 
 const signTransaction = (wallet, tx) => {
   return cardano.transactionSign({
-    signingKeys: [wallet.payment.skey, wallet.payment.skey],
+    signingKeys: [wallet.payment.skey, './policy/policy.skey'],
     txBody: tx,
   })
 }
@@ -56,7 +56,7 @@ function createMetadata(assetName, policyId, optionalMetadata) {
 }
 
 export async function mintNFT({ name, description, author, file }) {
-  const assetName = name.replaceAll(' ', '_')
+  const assetName = name.replaceAll(' ', '')
   const artHash = await uploadIpfs(file)
   const [policyId, policy] = createPolicy(keyHash, tip)
   const NFT = policyId + '.' + assetName
@@ -71,9 +71,9 @@ export async function mintNFT({ name, description, author, file }) {
     txOut: [{ address: wallet.paymentAddr, value: { ...wallet.balance().value, [NFT]: 1 } }],
     mint: [{ action: 'mint', quantity: 1, asset: NFT, script: policy }],
     metadata: metadata,
-    wittnessCount: 2,
+    witnessCount: 2,
+    invalidAfter: tip + 300,
   }
-  console.log(assetName, artHash, policy, metadata, tx, NFT)
   const raw = createTransaction(tx)
   const signed = signTransaction(wallet, raw)
   const txHash = cardano.transactionSubmit(signed)
@@ -81,11 +81,3 @@ export async function mintNFT({ name, description, author, file }) {
 }
 
 export async function mintToken() {}
-
-mintNFT({
-  name: 'Test',
-  author: 'ME',
-  description: 'This is a test',
-  file:
-    'https://api.typeform.com/responses/files/2f2194276fa1733f00e95f8535b53bcd8fde4d20ec77bd74d712c5268f4dc35b/canvas.png',
-})
