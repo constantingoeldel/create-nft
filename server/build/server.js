@@ -29,7 +29,15 @@ setInterval(async () => {
 const server = express();
 server.use(express.json());
 const port = process.env.PORT;
+server.get('/', (req, res) => {
+    console.log('Request received: GET / ');
+    res
+        .send('<p>This is the API connected to <a href="https://cardano-nft.de">https://cardano-nft.de</a>.</p>')
+        .status(200)
+        .end();
+});
 server.post('/form', (req, res) => {
+    console.log('Request received: POST /form ');
     handleSubmission(req);
     res.status(200).end();
 });

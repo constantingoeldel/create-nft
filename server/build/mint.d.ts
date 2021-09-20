@@ -12,4 +12,4 @@ export interface mintParams {
     price: number;
     paid: boolean;
 }
-export declare function mint({ type, name, description, author, file, amount, addr }: mintParams): Promise<any>;
+export declare function mint({ type, name, description, author, file, amount, addr }: mintParams): Promise<void>;
