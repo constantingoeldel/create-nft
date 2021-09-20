@@ -4,7 +4,7 @@ import Button from '../Button'
 import Logo from '../../svg/Logo'
 import { PopupButton } from '@typeform/embed-react'
 
-const Header = () => (
+const Header = ({ price = 10, id = '100' }) => (
   <header className="sticky top-0 bg-white shadow">
     <div className="container flex flex-row justify-between items-center mx-auto sm:py-4 px-8">
       <Logo />
@@ -23,9 +23,16 @@ const Header = () => (
         </AnchorLink> */}
       </div>
       <div className="hidden md:block">
-        <Button className="text-sm">
-          <PopupButton id="AqmhHkBs">Start creating</PopupButton>
-        </Button>
+        <PopupButton
+          className="bg-primary
+        hover:bg-primary-darker
+        rounded
+        text-white py-3 px-8"
+          id="AqmhHkBs"
+          hidden={{ adaprice: price.toString(), id: id }}
+        >
+          Start creating
+        </PopupButton>
       </div>
     </div>
   </header>

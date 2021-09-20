@@ -13,6 +13,7 @@ import SvgCharts from '../svg/SvgCharts'
 import { Widget, PopupButton } from '@typeform/embed-react'
 import Header from '../components/layout/Header'
 import { v4 as uuid } from 'uuid'
+import SEO from '../components/SEO'
 
 const Index = () => {
   const price = (4 + Math.random()).toFixed(4)
@@ -20,7 +21,8 @@ const Index = () => {
   const height = typeof window !== 'undefined' ? window.innerHeight * 0.6 : 700
   return (
     <>
-      <Header />
+      <SEO />
+      <Header price={price} id={id} />
       <section className="pt-10 sm:pt-20 ">
         <div className="container mx-auto px-8 lg:flex ">
           <div className="text-center ">
@@ -157,11 +159,16 @@ const Index = () => {
           Everything until the final confirmation is easily reversible, no hidden costs.
         </p>
         <p className="mt-8">
-          <Button size="xl">
-            <PopupButton id="AqmhHkBs" hidden={{}}>
-              Get started now
-            </PopupButton>
-          </Button>
+          <PopupButton
+            className="bg-primary
+        hover:bg-primary-darker
+        rounded
+        text-white py-5 px-16 text-lg"
+            id="AqmhHkBs"
+            hidden={{ adaprice: price.toString(), id: id }}
+          >
+            Get started now
+          </PopupButton>
         </p>
       </section>
     </>
