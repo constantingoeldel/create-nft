@@ -1,7 +1,7 @@
 import express from 'express'
 import { config } from 'dotenv'
 import crypto from 'crypto'
-import { mintNFT, mintToken } from './mint.js'
+import { mint } from './mint.js'
 config()
 
 const server = express()
@@ -21,7 +21,7 @@ function handleSubmission({ body, headers }) {
   // TODO trust needs work
   const trust = verifyIntegrity(body, headers['typeform-signature'])
   const params = getAnswers(body)
-  params.paid && params.type === 'NFT' ? mintNFT(params) : mintToken(params)
+  params.paid && mint(params)
 }
 
 function getAnswers(payload) {

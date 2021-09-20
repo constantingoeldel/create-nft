@@ -10,7 +10,7 @@ import StatsBox from '../components/StatsBox'
 import customerData from '../data/customer-data'
 import HeroImage from '../svg/HeroImage'
 import SvgCharts from '../svg/SvgCharts'
-import { Widget, Popover, PopupButton } from '@typeform/embed-react'
+import { Widget, PopupButton } from '@typeform/embed-react'
 import Header from '../components/layout/Header'
 import { v4 as uuid } from 'uuid'
 
@@ -20,24 +20,27 @@ const Index = () => {
   return (
     <>
       <Header />
-      <section className="pt-20 ">
+      <section className="pt-10 sm:pt-20 ">
         <div className="container mx-auto px-8 lg:flex ">
           <div className="text-center ">
-            <h1 className="text-4xl lg:text-5xl xl:text-6xl font-bold leading-none">
-              The easiest way to create your own NFTs and tokens on Cardano
+            <h1 className="text-2xl sm:text-4xl lg:text-5xl xl:text-6xl font-bold leading-none">
+              The easiest way to create your own NFTs on Cardano
             </h1>
-            <p className="text-xl lg:text-2xl mt-6 font-light">
+            <p className="text-l sm:text-xl lg:text-2xl mt-6 font-light">
               It will take just 5 minutes, no prior knowledge required. Payment via ADA or credit
               card.
             </p>
           </div>
         </div>
-        <div className="container mx-auto px-8 lg:flex my-16 ">
+        <div className="container mx-auto px-8 lg:flex relative z-0 ">
           <Widget
             id="AqmhHkBs"
             hidden={{ adaprice: price.toString(), id: id }}
-            height="500"
             className="flex-auto"
+            height={window.innerHeight * 0.6}
+            hideFooter={true}
+            hideHeaders={true}
+            inlineOnMobile={true}
           />
         </div>
       </section>
@@ -67,7 +70,7 @@ const Index = () => {
               <Card className="mb-8">
                 <p className="font-semibold text-xl">Versatile</p>
                 <p className="mt-4">
-                  You can add all sorts of pictures, videos and audio files to yur NFT. For native
+                  You can add all sorts of pictures, videos and audio files to your NFT. For native
                   tokens, you can create as many as you can dream of!
                 </p>
               </Card>

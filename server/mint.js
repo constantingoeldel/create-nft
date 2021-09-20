@@ -27,14 +27,16 @@ const signTransaction = (wallet, tx) => {
   })
 }
 
-function createPolicy(keyHash, tip) {
+function createPolicy(type, keyHash, tip) {
+  // Include functionality for user to get minting rights, perhaps by sending keys?
+  const sig = {
+    keyHash: keyHash,
+    type: 'sig',
+  }
   const policy = {
     type: 'all',
     scripts: [
-      {
-        keyHash: keyHash,
-        type: 'sig',
-      },
+      sig,
       {
         type: 'before',
         slot: tip + 300,
@@ -42,7 +44,7 @@ function createPolicy(keyHash, tip) {
     ],
   }
 
-  return [cardano.transactionPolicyid(policy), policy]
+  return [cardano.transactionPolicyid(type === 'NFT' ? policy : sig), policy]
 }
 
 function createMetadata(assetName, policyId, optionalMetadata) {
@@ -55,21 +57,21 @@ function createMetadata(assetName, policyId, optionalMetadata) {
   }
 }
 
-export async function mintNFT({ name, description, author, file }) {
+export async function mint({ type, name, description, author, file, amount }) {
   const assetName = name.replaceAll(' ', '')
   const artHash = await uploadIpfs(file)
-  const [policyId, policy] = createPolicy(keyHash, tip)
+  const [policyId, policy] = createPolicy(type, keyHash, tip)
   const NFT = policyId + '.' + assetName
   const metadata = createMetadata(assetName, policyId, {
-    name: name,
+    name,
     image: 'ipfs://' + artHash,
     description,
     author,
   })
   const tx = {
     txIn: wallet.balance().utxo,
-    txOut: [{ address: wallet.paymentAddr, value: { ...wallet.balance().value, [NFT]: 1 } }],
-    mint: [{ action: 'mint', quantity: 1, asset: NFT, script: policy }],
+    txOut: [{ address: wallet.paymentAddr, value: { ...wallet.balance().value, [NFT]: amount } }],
+    mint: [{ action: 'mint', quantity: amount, asset: NFT, script: policy }],
     metadata: metadata,
     witnessCount: 2,
     invalidAfter: tip + 300,
@@ -79,5 +81,3 @@ export async function mintNFT({ name, description, author, file }) {
   const txHash = cardano.transactionSubmit(signed)
   return txHash
 }
-
-export async function mintToken() {}
