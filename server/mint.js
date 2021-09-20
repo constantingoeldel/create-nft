@@ -56,7 +56,7 @@ function createMetadata(assetName, policyId, optionalMetadata) {
   }
 }
 
-export async function mint({ type, name, description, author, file, amount }) {
+export async function mint({ type, name, description, author, file, amount, addr }) {
   const assetName = name.replaceAll(' ', '')
   const artHash = await uploadIpfs(file)
   const [policyId, policy] = createPolicy(type, keyHash, tip)
@@ -69,7 +69,10 @@ export async function mint({ type, name, description, author, file, amount }) {
   })
   const tx = {
     txIn: wallet.balance().utxo,
-    txOut: [{ address: wallet.paymentAddr, value: { ...wallet.balance().value, [NFT]: amount } }],
+    txOut: [
+      { address: wallet.paymentAddr, value: { ...wallet.balance().value } },
+      { address: addr, value: { [NFT]: amount } },
+    ],
     mint: [{ action: 'mint', quantity: amount, asset: NFT, script: policy }],
     metadata: metadata,
     witnessCount: 2,

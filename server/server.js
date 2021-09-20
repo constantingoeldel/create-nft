@@ -2,7 +2,34 @@ import express from 'express'
 import { config } from 'dotenv'
 import crypto from 'crypto'
 import { mint } from './mint.js'
+import CardanoCliJs from 'cardanocli-js'
+import { BlockFrostAPI } from '@blockfrost/blockfrost-js'
+import { addresses } from '@blockfrost/blockfrost-js/lib/endpoints/api/addresses'
 config()
+
+const blockfrost = new BlockFrostAPI({
+  projectId: process.env.BLOCKFROST_API_KEY_MAINNET,
+})
+
+const shelleyGenesisPath = '$PATH/cardano/configuration/cardano/mainnet-shelley-genesis.json'
+
+const cardano = new CardanoCliJs({ shelleyGenesisPath })
+
+const wallet = cardano.wallet('Constantin')
+
+let utxos = []
+let utxoCounter = 0
+let receivedPayments = []
+let openRequests = []
+
+setInterval(() => {
+  utxos = cardano.queryUtxo('addr1v9wn4hy9vhpggjznklav6pp4wtk3ldkktfp5m2ja36zv4sshsepsj')
+  if (utxoCounter > utxos.length) {
+    receivedPayments.push(payerAddr(utxos[utxos.length - 1]))
+    utxoCounter = utxos.length
+    checkPayment(receivedPayments, openRequests)
+  }
+}, 1000)
 
 const server = express()
 server.use(express.json())
@@ -22,6 +49,7 @@ function handleSubmission({ body, headers }) {
   const trust = verifyIntegrity(body, headers['typeform-signature'])
   const params = getAnswers(body)
   params.paid && mint(params)
+  openRequests.push(params)
 }
 
 function getAnswers(payload) {
@@ -73,4 +101,30 @@ function verifyIntegrity(body, sig) {
   )
 }
 
-// Response, ada checking, sending to customer, integration with typeform, hosting, token minting, iframe size, id and stuff
+// sending to customer,
+
+async function payerAddr(txHash) {
+  let outputs = {
+    amount: 0,
+    payer: '',
+  }
+  const tx = await blockfrost.txsUtxos(txHash)
+  tx.outputs.forEach((output) => {
+    output.address === wallet.paymentAddr
+      ? (outputs.amount = output.amount.find((a) => a.unit === 'lovelace').quantity)
+      : (outputs.payer = output.address)
+  })
+  return outputs
+}
+
+function checkPayment(payments, requests) {
+  for (const payment of payments) {
+    for (const [i, req] of requests.entries()) {
+      if (req.price === payment.amount) {
+        req.addr = payment.payer
+        mint(req)
+        requests.splice(i, 1)
+      }
+    }
+  }
+}

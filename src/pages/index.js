@@ -1,4 +1,4 @@
-//TODO: Button top, bottom fully clickable, different graphics, hidden ada price
+// Different graphics
 import React from 'react'
 import Button from '../components/Button'
 import Card from '../components/Card'
