@@ -17,6 +17,7 @@ import { v4 as uuid } from 'uuid'
 const Index = () => {
   const price = (4 + Math.random()).toFixed(4)
   const id = uuid()
+  const height = typeof window !== 'undefined' ? window.innerHeight * 0.6 : 700
   return (
     <>
       <Header />
@@ -37,7 +38,7 @@ const Index = () => {
             id="AqmhHkBs"
             hidden={{ adaprice: price.toString(), id: id }}
             className="flex-auto"
-            height={window.innerHeight * 0.6}
+            height={height}
             hideFooter={true}
             hideHeaders={true}
             inlineOnMobile={true}

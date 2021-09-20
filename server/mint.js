@@ -3,8 +3,7 @@ import uploadIpfs from './ipfs.js'
 import CardanoCliJs from 'cardanocli-js'
 config()
 
-const shelleyGenesisPath =
-  '/home/constantin/cardano/configuration/cardano/mainnet-shelley-genesis.json'
+const shelleyGenesisPath = '$PATH/cardano/configuration/cardano/mainnet-shelley-genesis.json'
 const cardano = new CardanoCliJs({ shelleyGenesisPath })
 
 const tip = cardano.queryTip().slot
