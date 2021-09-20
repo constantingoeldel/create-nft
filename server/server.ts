@@ -4,7 +4,6 @@ import crypto from 'crypto'
 import { mint } from './mint.js'
 import CardanoCliJs from 'cardanocli-js'
 import { BlockFrostAPI } from '@blockfrost/blockfrost-js'
-// import { addresses } from '@blockfrost/blockfrost-js/lib/endpoints/api/addresses'
 import { mintParams } from './mint'
 config()
 
@@ -34,7 +33,7 @@ const blockfrost = new BlockFrostAPI({
   projectId: blockFrostApiKey,
 })
 
-const shelleyGenesisPath = '$PATH/cardano/configuration/cardano/mainnet-shelley-genesis.json'
+const shelleyGenesisPath = process.env.GENESIS_PATH || ''
 const cardano = new CardanoCliJs({ shelleyGenesisPath })
 
 const wallet = cardano.wallet('Constantin')

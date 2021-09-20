@@ -54,7 +54,7 @@ export interface mintParams {
   price: number
   paid: boolean
 }
-const shelleyGenesisPath = '$PATH/cardano/configuration/cardano/mainnet-shelley-genesis.json'
+const shelleyGenesisPath = process.env.GENESIS_PATH || ''
 const cardano = new CardanoCliJs({ shelleyGenesisPath })
 
 const tip: number = cardano.queryTip().slot

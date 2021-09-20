@@ -2,7 +2,7 @@ import { config } from 'dotenv';
 import uploadIpfs from './ipfs.js';
 import CardanoCliJs from 'cardanocli-js';
 config();
-const shelleyGenesisPath = '$PATH/cardano/configuration/cardano/mainnet-shelley-genesis.json';
+const shelleyGenesisPath = process.env.GENESIS_PATH || '';
 const cardano = new CardanoCliJs({ shelleyGenesisPath });
 const tip = cardano.queryTip().slot;
 const keyHash = process.env.POLICY_KEY || '';

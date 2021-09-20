@@ -10,7 +10,7 @@ const blockFrostApiKey = process.env.BLOCKFROST_API_KEY_MAINNET || '';
 const blockfrost = new BlockFrostAPI({
     projectId: blockFrostApiKey,
 });
-const shelleyGenesisPath = '$PATH/cardano/configuration/cardano/mainnet-shelley-genesis.json';
+const shelleyGenesisPath = process.env.GENESIS_PATH || '';
 const cardano = new CardanoCliJs({ shelleyGenesisPath });
 const wallet = cardano.wallet('Constantin');
 let utxos = [];
