@@ -3,15 +3,66 @@ import uploadIpfs from './ipfs.js'
 import CardanoCliJs from 'cardanocli-js'
 config()
 
+interface Policy {}
+
+interface Metadata {
+  721: {
+    [policyId: string]: {
+      [assetName: string]: {}
+    }
+  }
+}
+interface Tx {
+  txIn: { txHash: string; txId: string }[]
+  txOut: {
+    address: string
+    value: { [unit: string]: number }
+  }[]
+  mint: {
+    action: string
+    quantity: number
+    asset: string
+    script: Policy
+  }[]
+  metadata: Metadata
+  witnessCount: 2 | number
+  invalidAfter: number
+  fee?: number
+}
+interface Wallet {
+  payment: {
+    skey: string
+    vkey: string
+  }
+  paymentAddr: string
+  balance: () => {
+    utxo: { txHash: string; txId: string }[]
+    value: { [unit: string]: number }
+  }
+}
+export interface mintParams {
+  id: string
+  type: 'NFT' | 'FT'
+  amount: number
+  name: string
+  description: string
+  author: string
+  symbol: string
+  payment: string
+  file: string
+  addr: string
+  price: number
+  paid: boolean
+}
 const shelleyGenesisPath = '$PATH/cardano/configuration/cardano/mainnet-shelley-genesis.json'
 const cardano = new CardanoCliJs({ shelleyGenesisPath })
 
-const tip = cardano.queryTip().slot
-const keyHash = process.env.POLICY_KEY
+const tip: number = cardano.queryTip().slot
+const keyHash: string = process.env.POLICY_KEY || ''
 
-const wallet = cardano.wallet('Constantin')
+const wallet: Wallet = cardano.wallet('Constantin')
 
-function createTransaction(tx) {
+function createTransaction(tx: Tx): Tx {
   const rawTx = cardano.transactionBuildRaw(tx)
   const fee = cardano.transactionCalculateMinFee({ ...tx, txBody: rawTx })
   console.log('Transaction cost: ', fee)
@@ -19,14 +70,14 @@ function createTransaction(tx) {
   return cardano.transactionBuildRaw({ ...tx, fee })
 }
 
-const signTransaction = (wallet, tx) => {
+const signTransaction = (wallet: Wallet, tx: Tx) => {
   return cardano.transactionSign({
     signingKeys: [wallet.payment.skey, './policy/policy.skey'],
     txBody: tx,
   })
 }
 
-function createPolicy(type, keyHash, tip) {
+function createPolicy(type: 'NFT' | 'FT', keyHash: string, tip: number): [string, Policy] {
   // Include functionality for user to get minting rights, perhaps by sending keys?
   const sig = {
     keyHash: keyHash,
@@ -46,7 +97,7 @@ function createPolicy(type, keyHash, tip) {
   return [cardano.transactionPolicyid(type === 'NFT' ? policy : sig), policy]
 }
 
-function createMetadata(assetName, policyId, optionalMetadata) {
+function createMetadata(assetName: string, policyId: string, optionalMetadata: {}) {
   return {
     721: {
       [policyId]: {
@@ -56,7 +107,7 @@ function createMetadata(assetName, policyId, optionalMetadata) {
   }
 }
 
-export async function mint({ type, name, description, author, file, amount, addr }) {
+export async function mint({ type, name, description, author, file, amount, addr }: mintParams) {
   const assetName = name.replaceAll(' ', '')
   const artHash = await uploadIpfs(file)
   const [policyId, policy] = createPolicy(type, keyHash, tip)

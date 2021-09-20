@@ -4,28 +4,51 @@ import crypto from 'crypto'
 import { mint } from './mint.js'
 import CardanoCliJs from 'cardanocli-js'
 import { BlockFrostAPI } from '@blockfrost/blockfrost-js'
-import { addresses } from '@blockfrost/blockfrost-js/lib/endpoints/api/addresses'
+// import { addresses } from '@blockfrost/blockfrost-js/lib/endpoints/api/addresses'
+import { mintParams } from './mint'
 config()
 
+interface receivedPayment {
+  amount: number
+  payer: string
+}
+
+interface formResponse {
+  hidden: { id: string; adaprice: number }
+  answers: {
+    type: 'choice' | 'number' | 'file_url' | 'text' | 'payment'
+    choice: { label: string }
+    field: { id: string }
+    text: string
+    file_url: string
+    number: number
+    payment: {
+      amount: string
+      success: boolean
+    }
+  }[]
+}
+const typeformSecret = process.env.TYPEFORM_SECRET || ''
+const blockFrostApiKey = process.env.BLOCKFROST_API_KEY_MAINNET || ''
 const blockfrost = new BlockFrostAPI({
-  projectId: process.env.BLOCKFROST_API_KEY_MAINNET,
+  projectId: blockFrostApiKey,
 })
 
 const shelleyGenesisPath = '$PATH/cardano/configuration/cardano/mainnet-shelley-genesis.json'
-
 const cardano = new CardanoCliJs({ shelleyGenesisPath })
 
 const wallet = cardano.wallet('Constantin')
 
 let utxos = []
 let utxoCounter = 0
-let receivedPayments = []
-let openRequests = []
+let receivedPayments: receivedPayment[] = []
+let openRequests: mintParams[] = []
 
-setInterval(() => {
+setInterval(async () => {
   utxos = cardano.queryUtxo('addr1v9wn4hy9vhpggjznklav6pp4wtk3ldkktfp5m2ja36zv4sshsepsj')
   if (utxoCounter > utxos.length) {
-    receivedPayments.push(payerAddr(utxos[utxos.length - 1]))
+    const payment = await payerAddr(utxos[utxos.length - 1])
+    receivedPayments.push(payment)
     utxoCounter = utxos.length
     checkPayment(receivedPayments, openRequests)
   }
@@ -37,23 +60,26 @@ const port = process.env.PORT
 
 server.post('/form', (req, res) => {
   handleSubmission(req)
-  res.status('200').end()
+  res.status(200).end()
 })
 
 server.listen(port, () => {
   console.log('Server running on port ' + port)
 })
-
-function handleSubmission({ body, headers }) {
+interface Request {
+  body: { form_response: formResponse }
+  headers: { ['typeform-signature']: string }
+}
+function handleSubmission({ body, headers }: Request) {
   // TODO trust needs work
-  const trust = verifyIntegrity(body, headers['typeform-signature'])
-  const params = getAnswers(body)
+  const trust = verifyIntegrity(body.toString(), headers['typeform-signature'])
+  const params = getAnswers(body.form_response)
   params.paid && mint(params)
   openRequests.push(params)
 }
 
-function getAnswers(payload) {
-  const answers = {
+function getAnswers(formResponse: formResponse) {
+  const answers: mintParams = {
     id: '',
     type: 'NFT',
     amount: 1,
@@ -67,9 +93,9 @@ function getAnswers(payload) {
     price: 0,
     paid: false,
   }
-  const answersRaw = payload.form_response.answers
-  answers.id = payload.form_response.hidden.id
-  answers.price = payload.form_response.hidden.adaprice
+  const answersRaw = formResponse.answers
+  answers.id = formResponse.hidden.id
+  answers.price = formResponse.hidden.adaprice
   answersRaw.forEach((answer) => {
     const id = answer.field.id
     if (answer.type === 'number') {
@@ -91,19 +117,15 @@ function getAnswers(payload) {
   return answers
 }
 
-function verifyIntegrity(body, sig) {
+function verifyIntegrity(body: string, sig: string) {
   return (
-    sig ===
-    crypto
-      .createHmac('sha256', process.env.TYPEFORM_SECRET)
-      .update(body.toString())
-      .digest('base64')
+    sig === crypto.createHmac('sha256', typeformSecret).update(body.toString()).digest('base64')
   )
 }
 
 // sending to customer,
 
-async function payerAddr(txHash) {
+async function payerAddr(txHash: string) {
   let outputs = {
     amount: 0,
     payer: '',
@@ -111,13 +133,13 @@ async function payerAddr(txHash) {
   const tx = await blockfrost.txsUtxos(txHash)
   tx.outputs.forEach((output) => {
     output.address === wallet.paymentAddr
-      ? (outputs.amount = output.amount.find((a) => a.unit === 'lovelace').quantity)
+      ? (outputs.amount = parseInt(output.amount.filter((a) => a.unit === 'lovelace')[0].quantity))
       : (outputs.payer = output.address)
   })
   return outputs
 }
 
-function checkPayment(payments, requests) {
+function checkPayment(payments: receivedPayment[], requests: mintParams[]) {
   for (const payment of payments) {
     for (const [i, req] of requests.entries()) {
       if (req.price === payment.amount) {
