@@ -9,7 +9,7 @@
     "build": "gatsby build"
   },
   "dependencies": {
-    "@typeform/embed-react": "^1.1.1",
+    "@tailwindcss/forms": "^0.3.4",
     "gatsby": "^3.0.3",
     "gatsby-plugin-emotion": "^6.0.0",
     "gatsby-plugin-react-helmet": "^4.14.0",

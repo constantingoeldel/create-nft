@@ -2,7 +2,6 @@ import React from 'react'
 import AnchorLink from 'react-anchor-link-smooth-scroll'
 import Button from '../Button'
 import Logo from '../../svg/Logo'
-import { PopupButton } from '@typeform/embed-react'
 
 const Header = ({ price = 10, id = '100' }) => (
   <header className="sticky top-0 bg-white shadow">
@@ -23,16 +22,7 @@ const Header = ({ price = 10, id = '100' }) => (
         </AnchorLink> */}
       </div>
       <div className="hidden md:block">
-        <PopupButton
-          className="bg-primary
-        hover:bg-primary-darker
-        rounded
-        text-white py-3 px-8"
-          id="AqmhHkBs"
-          hidden={{ adaprice: price.toString(), id: id }}
-        >
-          Start creating
-        </PopupButton>
+        <Button>Start creating</Button>
       </div>
     </div>
   </header>

@@ -10,15 +10,14 @@ import StatsBox from '../components/StatsBox'
 import customerData from '../data/customer-data'
 import HeroImage from '../svg/HeroImage'
 import SvgCharts from '../svg/SvgCharts'
-import { Widget, PopupButton } from '@typeform/embed-react'
 import Header from '../components/layout/Header'
 import { v4 as uuid } from 'uuid'
 import SEO from '../components/SEO'
+import Form from '../components/Form'
 
 const Index = () => {
   const price = (4 + Math.random()).toFixed(4)
   const id = uuid()
-  const height = typeof window !== 'undefined' ? window.innerHeight * 0.6 : 700
   return (
     <>
       <SEO />
@@ -34,18 +33,9 @@ const Index = () => {
               card.
             </p>
           </div>
+          <Form className="mt-16" amount={price} id={id} />
         </div>
-        <div className="container mx-auto px-8 lg:flex relative z-0 ">
-          <Widget
-            id="AqmhHkBs"
-            hidden={{ adaprice: price.toString(), id: id }}
-            className="flex-auto"
-            height={height}
-            hideFooter={true}
-            hideHeaders={true}
-            inlineOnMobile={true}
-          />
-        </div>
+        <div className="container mx-auto px-8 lg:flex relative z-0 "></div>
       </section>
       <section id="features" className="py-20">
         <div className="container mx-auto text-center">
@@ -158,18 +148,7 @@ const Index = () => {
         <p className="mt-8 text-xl font-light">
           Everything until the final confirmation is easily reversible, no hidden costs.
         </p>
-        <p className="mt-8">
-          <PopupButton
-            className="bg-primary
-        hover:bg-primary-darker
-        rounded
-        text-white py-5 px-16 text-lg"
-            id="AqmhHkBs"
-            hidden={{ adaprice: price.toString(), id: id }}
-          >
-            Get started now
-          </PopupButton>
-        </p>
+        <Button className="mt-8">Start creating</Button>
       </section>
     </>
   )
