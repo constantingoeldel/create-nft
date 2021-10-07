@@ -13,10 +13,12 @@
   "license": "ISC",
   "dependencies": {
     "@blockfrost/blockfrost-js": "^2.0.1",
+    "@types/express-formidable": "^1.2.0",
     "cardanocli-js": "^4.0.0",
     "cors": "^2.8.5",
     "dotenv": "^10.0.0",
     "express": "^4.17.1",
+    "express-formidable": "^1.2.0",
     "unirest": "^0.6.0"
   },
   "devDependencies": {

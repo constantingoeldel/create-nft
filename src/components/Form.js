@@ -3,17 +3,17 @@ import jsSHA from 'jssha'
 
 export default function Form({ price = '5.0', id }) {
   const [step, setStep] = useState(0)
-  const [type, setType] = useState('Asset')
+  const [type, setType] = useState('NFT')
   const [copied, setCopied] = useState(false)
+  const [file, setFile] = useState(null)
   const [input, setInput] = useState({
     name: '',
     author: '',
     description: '',
     amount: '1',
     symbol: '',
-    file: '',
   })
-
+  const fileURL = file ? URL.createObjectURL(file) : ''
   function submitForm() {
     const body = JSON.stringify({
       id: id,
@@ -23,29 +23,47 @@ export default function Form({ price = '5.0', id }) {
       description: input.description,
       amount: Number.parseInt(input.amount),
       symbol: input.symbol,
-      file: input.file,
       price: price,
     })
+
     const crypt = new jsSHA('SHA-512', 'TEXT')
-    crypt.setHMACKey('example_key', 'TEXT')
+    crypt.setHMACKey('735a1f6c-7921-410c-a954-dce57483f195', 'TEXT')
     crypt.update(body)
     const hmac = crypt.getHMAC('HEX')
 
-    const headers = new Headers()
-    headers.append('checksum', hmac)
-    headers.append('Content-Type', 'application/json')
+    const dataHeaders = new Headers()
+    dataHeaders.append('checksum', hmac)
+    dataHeaders.append('Content-Type', 'application/json')
 
-    const requestOptions = {
+    const inputOptions = {
       method: 'POST',
-      headers: headers,
+      headers: dataHeaders,
       body: body,
       redirect: 'follow',
     }
 
-    fetch('http://localhost:3000/form', requestOptions)
+    const fileHeaders = new Headers()
+    fileHeaders.append('id', id)
+
+    const fileData = new FormData()
+    fileData.append('file', file, file.name)
+
+    const fileOptions = {
+      method: 'POST',
+      headers: fileHeaders,
+      body: fileData,
+      redirect: 'follow',
+    }
+
+    fetch('http://localhost:3000/file', fileOptions)
       .then((response) => response.text())
       .then((result) => console.log(result))
       .catch((error) => console.log('error', error))
+
+    // fetch('http://localhost:3000/form', inputOptions)
+    //   .then((response) => response.text())
+    //   .then((result) => console.log(result))
+    //   .catch((error) => console.log('error', error))
   }
   function copy(type) {
     navigator.clipboard
@@ -229,39 +247,64 @@ export default function Form({ price = '5.0', id }) {
                   <div>
                     <label className="block text-sm font-medium text-gray-700">{type} file</label>
                     <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
-                      <div className="space-y-1 text-center">
-                        <svg
-                          className="mx-auto h-12 w-12 text-gray-400"
-                          stroke="currentColor"
-                          fill="none"
-                          viewBox="0 0 48 48"
-                          aria-hidden="true"
-                        >
-                          <path
-                            d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
-                            strokeWidth={2}
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
-                        </svg>
-                        <div className="flex text-sm text-gray-600">
-                          <label
-                            htmlFor="file-upload"
-                            className="relative z-1 cursor-pointer bg-white rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-indigo-500"
+                      {file ? (
+                        <div className="relative">
+                          <img src={fileURL} />
+                          <button
+                            className="rounded-full bg-blue-900 p-2 absolute top-0 right-0"
+                            onClick={() => setFile()}
                           >
-                            <span>Upload a file</span>
-                            <input
-                              onChange={(event) => setInput({ ...input, file: event.target.value })}
-                              id="file-upload"
-                              name="file-upload"
-                              type="file"
-                              className="sr-only"
-                            />
-                          </label>
-                          <p className="pl-1">or drag and drop</p>
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              className="h-6 w-6"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="#fff"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M6 18L18 6M6 6l12 12"
+                              />
+                            </svg>
+                          </button>
                         </div>
-                        <p className="text-xs text-gray-500">PDF, JPG, GIF up to 15MB</p>
-                      </div>
+                      ) : (
+                        <div className="space-y-1 text-center">
+                          <svg
+                            className="mx-auto h-12 w-12 text-gray-400"
+                            stroke="currentColor"
+                            fill="none"
+                            viewBox="0 0 48 48"
+                            aria-hidden="true"
+                          >
+                            <path
+                              d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
+                              strokeWidth={2}
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                          </svg>
+                          <div className="flex text-sm text-gray-600">
+                            <label
+                              htmlFor="file-upload"
+                              className="relative z-1 cursor-pointer bg-white rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-indigo-500"
+                            >
+                              <span>Upload a file</span>
+                              <input
+                                onChange={(event) => setFile(event.target.files[0])}
+                                id="file-upload"
+                                name="file-upload"
+                                type="file"
+                                className="sr-only"
+                              />
+                            </label>
+                            <p className="pl-1">or drag and drop</p>
+                          </div>
+                          <p className="text-xs text-gray-500">PDF, JPG, GIF up to 15MB</p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>

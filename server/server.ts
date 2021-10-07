@@ -1,6 +1,7 @@
 // Yoroi button correctness amount + address
-
+import { rename } from 'fs'
 import express from 'express'
+import formidable from 'express-formidable'
 import cors from 'cors'
 import { config } from 'dotenv'
 import crypto from 'crypto'
@@ -29,24 +30,6 @@ let utxos = []
 let receivedPayments: receivedPayment[] = []
 let openRequests: mintParams[] = []
 
-// setInterval(async () => {
-//   utxos = cardano.queryUtxo('addr1v9wn4hy9vhpggjznklav6pp4wtk3ldkktfp5m2ja36zv4sshsepsj')
-//   console.log(utxos.length, utxoCounter, receivedPayments.length, openRequests.length)
-//   console.table(utxos)
-//   if (utxoCounter < utxos.length) {
-//     try {
-//       console.log('trying')
-//       const payment = await payerAddr(utxos[utxoCounter + 1].txHash)
-//       receivedPayments.push(payment)
-//       utxoCounter++
-//       checkPayment(receivedPayments, openRequests)
-//     } catch (error) {
-//       console.error(error)
-//     }
-//   }
-// }, 1000)
-
-checkUTXOs()
 async function checkUTXOs() {
   utxos = cardano.queryUtxo('addr1v9wn4hy9vhpggjznklav6pp4wtk3ldkktfp5m2ja36zv4sshsepsj').reverse()
   console.log(utxos.length, receivedPayments.length, openRequests.length)
@@ -62,15 +45,16 @@ async function checkUTXOs() {
       checkUTXOs()
     }
   } else {
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-    checkUTXOs()
+    await new Promise((resolve) => setTimeout(resolve, 10000))
     checkPayment(receivedPayments, openRequests)
+    checkUTXOs()
   }
 }
 
 const server = express()
 server.use(express.json())
 server.use(cors())
+server.use(formidable({ uploadDir: './tmp' }))
 const port = process.env.PORT
 
 server.get('/', (req, res) => {
@@ -83,7 +67,27 @@ server.get('/', (req, res) => {
     .end()
 })
 
+server.post('/file', (req, res) => {
+  const files = req.files
+  if (!files) {
+    res.status(401).end('Missing file')
+    return
+  }
+  // @ts-ignore But it is stupid to not get this
+  const file = Array.isArray(files) ? files.files[0] : files.file
+  const id = req.headers.id
+
+  rename('./' + file.path, './tmp/' + id + '_' + file.name, (err) => {
+    if (err) throw err
+    console.log('Upload of file successful. ID: ' + id)
+  })
+
+  // writeFileSync(`./tmp/${id}/${req.body.name}`, req.body.file)
+  res.end('Success.')
+})
+
 server.post('/test', (req, res) => {
+  console.log(req.body)
   //@ts-ignore
   const trust = verifyIntegrity(req.body, req.headers.checksum)
   trust
@@ -124,7 +128,12 @@ function handleSubmission(body: mintParams) {
 }
 
 function verifyIntegrity(body: string, sig: string) {
-  const hmac = crypto.createHmac('sha512', 'example_key').update(JSON.stringify(body)).digest('hex')
+  const hmac = crypto
+    //@ts-ignore
+    .createHmac('sha512', process.env.FORM_KEY)
+    .update(JSON.stringify(body))
+    .digest('hex')
+  console.log(hmac)
   return sig === hmac
 }
 
@@ -153,7 +162,6 @@ async function payerAddr(txHash: string) {
 function checkPayment(payments: receivedPayment[], requests: mintParams[]) {
   for (const payment of payments) {
     for (const [i, req] of requests.entries()) {
-      console.log(req.price, payment.amount)
       if (req.price === payment.amount) {
         console.log('Match for request ' + req.id + ' found: Address ' + payment.payer)
         req.addr = payment.payer
