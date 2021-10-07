@@ -1,21 +1,69 @@
 import React, { useState } from 'react'
+import jsSHA from 'jssha'
 
-export default function Form({ amount = '5.0', id }) {
+export default function Form({ prize = '5.0', id }) {
+  const [step, setStep] = useState(0)
   const [type, setType] = useState('Asset')
   const [copied, setCopied] = useState(false)
+  const [input, setInput] = useState({
+    name: '',
+    author: '',
+    description: '',
+    amount: '1',
+    symbol: '',
+    file: '',
+  })
 
+  function submitForm() {
+    const body = JSON.stringify({
+      id: id,
+      type,
+      name: input.name,
+      author: input.author,
+      description: input.description,
+      amount: Number.parseInt(input.amount),
+      symbol: input.symbol,
+      file: input.file,
+      prize: prize,
+    })
+    const crypt = new jsSHA('SHA-512', 'TEXT')
+    crypt.setHMACKey('example_key', 'TEXT')
+    crypt.update(body)
+    const hmac = crypt.getHMAC('HEX')
+
+    const headers = new Headers()
+    headers.append('checksum', hmac)
+    headers.append('Content-Type', 'application/json')
+
+    const requestOptions = {
+      method: 'POST',
+      headers: headers,
+      body: body,
+      redirect: 'follow',
+    }
+
+    fetch('http://localhost:3000/test', requestOptions)
+      .then((response) => response.text())
+      .then((result) => console.log(result))
+      .catch((error) => console.log('error', error))
+  }
   function copy(type) {
     navigator.clipboard
       .writeText(
-        type === 'addr' ? 'addr1v9wn4hy9vhpggjznklav6pp4wtk3ldkktfp5m2ja36zv4sshsepsj' : amount
+        type === 'addr' ? 'addr1v9wn4hy9vhpggjznklav6pp4wtk3ldkktfp5m2ja36zv4sshsepsj' : prize
       )
       .then(() => {
-        setCopied(true)
+        setCopied(type)
         copyTimeout && clearTimeout(copyTimeout)
         let copyTimeout = setTimeout(() => {
           setCopied(false)
         }, 1500)
       })
+  }
+
+  function nextStep(e, step) {
+    e.preventDefault()
+    setStep(step)
   }
 
   return (
@@ -37,7 +85,7 @@ export default function Form({ amount = '5.0', id }) {
             </div>
           </div>
           <div className="mt-5 md:mt-0 md:col-span-2">
-            <form action="#" method="POST">
+            <form onSubmit={(event) => nextStep(event, 1)}>
               <div className="shadow overflow-hidden sm:rounded-md">
                 <div className="px-4 py-5 bg-white space-y-6 sm:p-6">
                   <div className="grid grid-cols-6 gap-6">
@@ -91,7 +139,7 @@ export default function Form({ amount = '5.0', id }) {
             </div>
           </div>
           <div className="mt-5 md:mt-0 md:col-span-2">
-            <form action="#" method="POST">
+            <form onSubmit={(event) => nextStep(event, 2)}>
               <div className="shadow overflow-hidden sm:rounded-md">
                 <div className="px-4 py-5 bg-white space-y-6 sm:p-6">
                   <div className="grid grid-cols-6 gap-6">
@@ -103,6 +151,7 @@ export default function Form({ amount = '5.0', id }) {
                         {type} name
                       </label>
                       <input
+                        onChange={(event) => setInput({ ...input, name: event.target.value })}
                         required
                         type="text"
                         name="asset-name"
@@ -117,6 +166,7 @@ export default function Form({ amount = '5.0', id }) {
                           Author name
                         </label>
                         <input
+                          onChange={(event) => setInput({ ...input, author: event.target.value })}
                           type="text"
                           name="author"
                           id="author"
@@ -130,10 +180,14 @@ export default function Form({ amount = '5.0', id }) {
                           Token Symbol
                         </label>
                         <input
+                          onChange={(event) =>
+                            setInput({ ...input, symbol: event.target.value.toUpperCase() })
+                          }
                           type="text"
                           name="symbol"
                           id="symbol"
                           autoComplete="name"
+                          value={input.symbol}
                           className="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
                         />
                       </div>
@@ -147,6 +201,9 @@ export default function Form({ amount = '5.0', id }) {
                         Description
                       </label>
                       <input
+                        onChange={(event) =>
+                          setInput({ ...input, description: event.target.value })
+                        }
                         type="text"
                         name="description"
                         id="description"
@@ -159,10 +216,11 @@ export default function Form({ amount = '5.0', id }) {
                           Desired Amount
                         </label>
                         <input
+                          onChange={(event) => setInput({ ...input, amount: event.target.value })}
                           type="number"
                           name="amount"
                           id="amount"
-                          value="1"
+                          value={input.amount}
                           className="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
                         />
                       </div>
@@ -189,10 +247,11 @@ export default function Form({ amount = '5.0', id }) {
                         <div className="flex text-sm text-gray-600">
                           <label
                             htmlFor="file-upload"
-                            className="relative cursor-pointer bg-white rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-indigo-500"
+                            className="relative z-1 cursor-pointer bg-white rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-indigo-500"
                           >
                             <span>Upload a file</span>
                             <input
+                              onChange={(event) => setInput({ ...input, file: event.target.value })}
                               id="file-upload"
                               name="file-upload"
                               type="file"
@@ -233,30 +292,35 @@ export default function Form({ amount = '5.0', id }) {
             <div className="px-4 sm:px-0">
               <h3 className="text-lg font-medium leading-6 text-gray-900">Payment</h3>
               <p className="mt-1 text-sm text-gray-600">
-                Please send <b> {amount} </b> ADA to the following address on the Cardano
-                blockchain:
+                Please send <b> {prize} </b> ADA to the following address on the Cardano blockchain:
               </p>
             </div>
           </div>
           <div className="mt-5 md:mt-0 md:col-span-2">
-            <form action="#" method="POST">
+            <form
+              onSubmit={(event) => {
+                event.preventDefault()
+                submitForm()
+                nextStep(event, 3)
+              }}
+            >
               <div className="shadow overflow-hidden sm:rounded-md">
                 <div className="px-4 py-5 bg-white space-y-6 sm:p-6">
                   <div className="text-sm flex">
                     <button
                       type="button"
-                      class="hidden sm:flex sm:items-center sm:justify-center relative w-9 h-9 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 text-gray-400 hover:text-gray-600 group ml-2.5 "
+                      className="hidden sm:flex sm:items-center sm:justify-center relative w-9 h-9 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 text-gray-400 hover:text-gray-600 group ml-2.5 "
                       style={{
-                        color: copied ? '#06B6D4' : '#acb1bc',
-                        rotate: copied ? '10deg' : '0deg',
+                        color: copied === 'amount' ? '#06B6D4' : '#acb1bc',
+                        rotate: copied === 'amount' ? '10deg' : '0deg',
                       }}
-                      onClick={() => copy('addr')}
+                      onClick={() => copy('amount')}
                     >
-                      <span class="sr-only">Copy amount</span>
+                      <span className="sr-only">Copy amount</span>
                       <span
                         x-show="copied"
                         style={{ display: 'none' }}
-                        class="absolute inset-x-0 bottom-full mb-2.5 flex justify-center"
+                        className="absolute inset-x-0 bottom-full mb-2.5 flex justify-center"
                         //   x-transition:enter="transform ease-out duration-200 transition origin-bottom"
                         //   x-transition:enter-start="scale-95 translate-y-0.5 opacity-0"
                         //   x-transition:enter-end="scale-100 translate-y-0 opacity-100"
@@ -264,17 +328,17 @@ export default function Form({ amount = '5.0', id }) {
                         //   x-transition:leave-start="opacity-100"
                         //   x-transition:leave-end="opacity-0"
                       >
-                        <span class="bg-gray-900 text-white rounded-md text-[0.625rem] leading-4 tracking-wide font-semibold uppercase py-1 px-3 filter drop-shadow-md">
+                        <span className="bg-gray-900 text-white rounded-md text-[0.625rem] leading-4 tracking-wide font-semibold uppercase py-1 px-3 filter drop-shadow-md">
                           <svg
                             aria-hidden="true"
                             width="16"
                             height="6"
                             viewBox="0 0 16 6"
-                            class="text-gray-900 absolute top-full left-1/2 -mt-px -ml-2"
+                            className="text-gray-900 absolute top-full left-1/2 -mt-px -ml-2"
                           >
                             <path
-                              fill-rule="evenodd"
-                              clip-rule="evenodd"
+                              fillRule="evenodd"
+                              clipRule="evenodd"
                               d="M15 0H1V1.00366V1.00366V1.00371H1.01672C2.72058 1.0147 4.24225 2.74704 5.42685 4.72928C6.42941 6.40691 9.57154 6.4069 10.5741 4.72926C11.7587 2.74703 13.2803 1.0147 14.9841 1.00371H15V0Z"
                               fill="currentColor"
                             ></path>
@@ -288,71 +352,74 @@ export default function Form({ amount = '5.0', id }) {
                         height="32"
                         viewBox="0 0 32 32"
                         fill="none"
-                        class="stroke-current transform group-hover:rotate-[-4deg] transition"
+                        className="stroke-current transform group-hover:rotate-[-4deg] transition"
                       >
                         <path
                           d="M12.9975 10.7499L11.7475 10.7499C10.6429 10.7499 9.74747 11.6453 9.74747 12.7499L9.74747 21.2499C9.74747 22.3544 10.6429 23.2499 11.7475 23.2499L20.2475 23.2499C21.352 23.2499 22.2475 22.3544 22.2475 21.2499L22.2475 12.7499C22.2475 11.6453 21.352 10.7499 20.2475 10.7499L18.9975 10.7499"
-                          stroke-width="1.5"
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
+                          strokeWidth="1.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
                         ></path>
                         <path
                           d="M17.9975 12.2499L13.9975 12.2499C13.4452 12.2499 12.9975 11.8022 12.9975 11.2499L12.9975 9.74988C12.9975 9.19759 13.4452 8.74988 13.9975 8.74988L17.9975 8.74988C18.5498 8.74988 18.9975 9.19759 18.9975 9.74988L18.9975 11.2499C18.9975 11.8022 18.5498 12.2499 17.9975 12.2499Z"
-                          stroke-width="1.5"
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
+                          strokeWidth="1.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
                         ></path>
                         <path
                           d="M13.7475 16.2499L18.2475 16.2499"
-                          stroke-width="1.5"
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
+                          strokeWidth="1.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
                         ></path>
                         <path
                           d="M13.7475 19.2499L18.2475 19.2499"
-                          stroke-width="1.5"
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
+                          strokeWidth="1.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
                         ></path>
-                        <g class={copied ? '' : 'opacity-0'} class="opacity-0 transition-opacity">
+                        <g
+                          className={copied ? '' : 'opacity-0'}
+                          className="opacity-0 transition-opacity"
+                        >
                           <path
                             d="M15.9975 5.99988L15.9975 3.99988"
-                            stroke-width="1.5"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
+                            strokeWidth="1.5"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
                           ></path>
                           <path
                             d="M19.9975 5.99988L20.9975 4.99988"
-                            stroke-width="1.5"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
+                            strokeWidth="1.5"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
                           ></path>
                           <path
                             d="M11.9975 5.99988L10.9975 4.99988"
-                            stroke-width="1.5"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
+                            strokeWidth="1.5"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
                           ></path>
                         </g>
                       </svg>
                     </button>
-                    Amount: {amount}
+                    Amount: {prize}
                   </div>
                   <div className="text-sm flex">
                     <button
                       type="button"
-                      class="hidden sm:flex sm:items-center sm:justify-center relative w-9 h-9 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 text-gray-400 hover:text-gray-600 group ml-2.5 "
+                      className="hidden sm:flex sm:items-center sm:justify-center relative w-9 h-9 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 text-gray-400 hover:text-gray-600 group ml-2.5 "
                       style={{
-                        color: copied ? '#06B6D4' : '#acb1bc',
-                        rotate: copied ? '10deg' : '0deg',
+                        color: copied === 'addr' ? '#06B6D4' : '#acb1bc',
+                        rotate: copied === 'addr' ? '10deg' : '0deg',
                       }}
                       onClick={() => copy('addr')}
                     >
-                      <span class="sr-only">Copy address</span>
+                      <span className="sr-only">Copy address</span>
                       <span
                         x-show="copied"
                         style={{ display: 'none' }}
-                        class="absolute inset-x-0 bottom-full mb-2.5 flex justify-center"
+                        className="absolute inset-x-0 bottom-full mb-2.5 flex justify-center"
                         //   x-transition:enter="transform ease-out duration-200 transition origin-bottom"
                         //   x-transition:enter-start="scale-95 translate-y-0.5 opacity-0"
                         //   x-transition:enter-end="scale-100 translate-y-0 opacity-100"
@@ -360,17 +427,17 @@ export default function Form({ amount = '5.0', id }) {
                         //   x-transition:leave-start="opacity-100"
                         //   x-transition:leave-end="opacity-0"
                       >
-                        <span class="bg-gray-900 text-white rounded-md text-[0.625rem] leading-4 tracking-wide font-semibold uppercase py-1 px-3 filter drop-shadow-md">
+                        <span className="bg-gray-900 text-white rounded-md text-[0.625rem] leading-4 tracking-wide font-semibold uppercase py-1 px-3 filter drop-shadow-md">
                           <svg
                             aria-hidden="true"
                             width="16"
                             height="6"
                             viewBox="0 0 16 6"
-                            class="text-gray-900 absolute top-full left-1/2 -mt-px -ml-2"
+                            className="text-gray-900 absolute top-full left-1/2 -mt-px -ml-2"
                           >
                             <path
-                              fill-rule="evenodd"
-                              clip-rule="evenodd"
+                              fillRule="evenodd"
+                              clipRule="evenodd"
                               d="M15 0H1V1.00366V1.00366V1.00371H1.01672C2.72058 1.0147 4.24225 2.74704 5.42685 4.72928C6.42941 6.40691 9.57154 6.4069 10.5741 4.72926C11.7587 2.74703 13.2803 1.0147 14.9841 1.00371H15V0Z"
                               fill="currentColor"
                             ></path>
@@ -384,50 +451,53 @@ export default function Form({ amount = '5.0', id }) {
                         height="32"
                         viewBox="0 0 32 32"
                         fill="none"
-                        class="stroke-current transform group-hover:rotate-[-4deg] transition"
+                        className="stroke-current transform group-hover:rotate-[-4deg] transition"
                       >
                         <path
                           d="M12.9975 10.7499L11.7475 10.7499C10.6429 10.7499 9.74747 11.6453 9.74747 12.7499L9.74747 21.2499C9.74747 22.3544 10.6429 23.2499 11.7475 23.2499L20.2475 23.2499C21.352 23.2499 22.2475 22.3544 22.2475 21.2499L22.2475 12.7499C22.2475 11.6453 21.352 10.7499 20.2475 10.7499L18.9975 10.7499"
-                          stroke-width="1.5"
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
+                          strokeWidth="1.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
                         ></path>
                         <path
                           d="M17.9975 12.2499L13.9975 12.2499C13.4452 12.2499 12.9975 11.8022 12.9975 11.2499L12.9975 9.74988C12.9975 9.19759 13.4452 8.74988 13.9975 8.74988L17.9975 8.74988C18.5498 8.74988 18.9975 9.19759 18.9975 9.74988L18.9975 11.2499C18.9975 11.8022 18.5498 12.2499 17.9975 12.2499Z"
-                          stroke-width="1.5"
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
+                          strokeWidth="1.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
                         ></path>
                         <path
                           d="M13.7475 16.2499L18.2475 16.2499"
-                          stroke-width="1.5"
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
+                          strokeWidth="1.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
                         ></path>
                         <path
                           d="M13.7475 19.2499L18.2475 19.2499"
-                          stroke-width="1.5"
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
+                          strokeWidth="1.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
                         ></path>
-                        <g class={copied ? '' : 'opacity-0'} class="opacity-0 transition-opacity">
+                        <g
+                          className={copied ? '' : 'opacity-0'}
+                          className="opacity-0 transition-opacity"
+                        >
                           <path
                             d="M15.9975 5.99988L15.9975 3.99988"
-                            stroke-width="1.5"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
+                            strokeWidth="1.5"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
                           ></path>
                           <path
                             d="M19.9975 5.99988L20.9975 4.99988"
-                            stroke-width="1.5"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
+                            strokeWidth="1.5"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
                           ></path>
                           <path
                             d="M11.9975 5.99988L10.9975 4.99988"
-                            stroke-width="1.5"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
+                            strokeWidth="1.5"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
                           ></path>
                         </g>
                       </svg>
@@ -439,7 +509,7 @@ export default function Form({ amount = '5.0', id }) {
                   </div>
                   <a
                     className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-500 hover:bg-green-600 focus:outline-none hover:text-gray-100"
-                    href={`web+cardano:addr1qxsht6lpzcr827e7t76yv3nvlt9a4s2hp04txghdtpe7rt0ewupjv3uxkx0p98hsmwyec7k4987t0empj7vcmmt0jngqmd0t3c?amount=${amount}`}
+                    href={`web+cardano:addr1qxsht6lpzcr827e7t76yv3nvlt9a4s2hp04txghdtpe7rt0ewupjv3uxkx0p98hsmwyec7k4987t0empj7vcmmt0jngqmd0t3c?amount=${prize}`}
                     rel="noopener"
                     target="_blank"
                   >
@@ -459,10 +529,10 @@ export default function Form({ amount = '5.0', id }) {
                         </div>
                         <div className="ml-3 text-sm">
                           <label htmlFor="sent" className="font-medium text-gray-700">
-                            I sent the {amount} ADA
+                            I sent the {prize} ADA
                           </label>
                           <p className="text-gray-500">
-                            We constantly monitor received payments and will proceed with your
+                            We constantly monitor received payments and will proceed with your{' '}
                             {type} as soon as possible
                           </p>
                         </div>
@@ -500,7 +570,7 @@ export default function Form({ amount = '5.0', id }) {
               </div>
             </div>
             <div className="mt-5 md:mt-0 md:col-span-2">
-              <form action="#" method="POST">
+              <form onSubmit={(event) => nextStep(event, 4)}>
                 <div className="shadow overflow-hidden sm:rounded-md">
                   <div className="px-4 py-5 bg-white space-y-6 sm:p-6">
                     <div className="grid grid-cols-6 gap-6">
