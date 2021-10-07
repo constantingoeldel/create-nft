@@ -130,7 +130,7 @@ export async function mint({
     txIn: wallet.balance().utxo,
     txOut: [
       { address: wallet.paymentAddr, value: { ...wallet.balance().value } },
-      { address: addr, value: { [NFT]: amount } },
+      { address: addr, value: { lovelace: 1000000, [NFT]: amount } },
     ],
     mint: [{ action: 'mint', quantity: amount, asset: NFT, script: policy }],
     metadata: metadata,
