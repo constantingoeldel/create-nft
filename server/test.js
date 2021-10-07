@@ -17,18 +17,20 @@ const wallet = cardano.wallet('Constantin')
 //   console.log(utxos.map((utxo) => utxo.value))
 // }, 1000)
 
+// Is this rigorous enough? Implement tests
 async function payerAddr(txHash) {
-  let outputs = {
+  let info = {
     received: 0,
     payer: '',
   }
   const tx = await blockfrost.txsUtxos(txHash)
+  console.log(tx)
   tx.outputs.forEach((output) => {
-    output.address === wallet.paymentAddr
-      ? (outputs.received = output.amount.find((a) => a.unit === 'lovelace').quantity)
-      : (outputs.payer = output.address)
+    output.address === wallet.paymentAddr &&
+      (info.received = output.amount.find((a) => a.unit === 'lovelace').quantity) &&
+      (info.payer = tx.inputs[0].address)
   })
-  return outputs
+  return info
 }
 
 const res = await payerAddr('debd74a519c4f672558b3ee768e55d0d7459375c055968f1e5502a98041ddc7d')
