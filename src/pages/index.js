@@ -11,7 +11,7 @@ import SvgCharts from '../svg/SvgCharts'
 import Header from '../components/layout/Header'
 import { v4 as uuid } from 'uuid'
 import SEO from '../components/SEO'
-import Form from '../components/Form'
+import Form from '../components/form/Form'
 
 const Index = () => {
   const price = (1 + Math.random()).toFixed(4)
@@ -21,7 +21,7 @@ const Index = () => {
       <SEO />
       <Header price={price} id={id} />
       <section className="pt-10 sm:pt-20 ">
-        <div className="container mx-auto px-8 lg:flex ">
+        <div className="container mx-auto px-8 ">
           <div className="text-center ">
             <h1 className="text-2xl sm:text-4xl lg:text-5xl xl:text-6xl font-bold leading-none">
               The easiest way to create your own NFTs on Cardano
