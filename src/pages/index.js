@@ -32,7 +32,7 @@ const Index = () => {
               card.
             </p>
           </div>
-          <Form className="mt-16" prize={price} id={id} />
+          <Form className="mt-16" price={price} id={id} />
         </div>
         <div className="container mx-auto px-8 lg:flex relative z-0 "></div>
       </section>

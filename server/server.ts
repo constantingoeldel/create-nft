@@ -1,3 +1,5 @@
+// Yoroi button correctness amount + address
+
 import express from 'express'
 import cors from 'cors'
 import { config } from 'dotenv'
@@ -24,7 +26,6 @@ const cardano = new CardanoCliJs({ shelleyGenesisPath })
 const wallet = cardano.wallet('Constantin')
 
 let utxos = []
-let utxoCounter = -1
 let receivedPayments: receivedPayment[] = []
 let openRequests: mintParams[] = []
 
@@ -47,16 +48,14 @@ let openRequests: mintParams[] = []
 
 checkUTXOs()
 async function checkUTXOs() {
-  utxos = cardano.queryUtxo('addr1v9wn4hy9vhpggjznklav6pp4wtk3ldkktfp5m2ja36zv4sshsepsj')
-  console.log(utxos.length, utxoCounter, receivedPayments.length, openRequests.length)
+  utxos = cardano.queryUtxo('addr1v9wn4hy9vhpggjznklav6pp4wtk3ldkktfp5m2ja36zv4sshsepsj').reverse()
+  console.log(utxos.length, receivedPayments.length, openRequests.length)
   console.table(utxos)
-  if (utxoCounter < utxos.length) {
+  if (receivedPayments.length < utxos.length) {
     try {
-      console.log('trying: ', utxos[utxoCounter + 1].txHash)
-      const payment = await payerAddr(utxos[utxoCounter + 1].txHash)
+      const payment = await payerAddr(utxos[receivedPayments.length].txHash)
       receivedPayments.push(payment)
       checkPayment(receivedPayments, openRequests)
-      utxoCounter++
       checkUTXOs()
     } catch (error) {
       console.error(error)
@@ -65,6 +64,7 @@ async function checkUTXOs() {
   } else {
     await new Promise((resolve) => setTimeout(resolve, 1000))
     checkUTXOs()
+    checkPayment(receivedPayments, openRequests)
   }
 }
 
@@ -99,9 +99,10 @@ server.post('/form', (req, res) => {
   const trust = verifyIntegrity(req.body, req.headers.checksum)
   if (trust) {
     // @ts-ignore
-    handleSubmission(req)
+    handleSubmission(req.body)
     res.status(200).end()
   } else {
+    console.log('Checksum did not match. Aborting.')
     res
       .status(401)
       .end('Source not authenticated. Please contact me if you believe this is a mistake.')
@@ -115,8 +116,10 @@ interface Request {
   body: string
   headers: { checksum: string }
 }
-function handleSubmission({ body }: Request) {
-  const params: mintParams = JSON.parse(body)
+function handleSubmission(body: mintParams) {
+  const params = body
+  params.price = params.price * 1_000_000
+  console.log('Trusted request received. ID: ', params.id)
   params.paid ? mint(params) : openRequests.push(params)
 }
 
@@ -150,7 +153,9 @@ async function payerAddr(txHash: string) {
 function checkPayment(payments: receivedPayment[], requests: mintParams[]) {
   for (const payment of payments) {
     for (const [i, req] of requests.entries()) {
+      console.log(req.price, payment.amount)
       if (req.price === payment.amount) {
+        console.log('Match for request ' + req.id + ' found: Address ' + payment.payer)
         req.addr = payment.payer
         mint(req)
         requests.splice(i, 1)

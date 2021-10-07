@@ -107,9 +107,17 @@ function createMetadata(assetName: string, policyId: string, optionalMetadata: {
   }
 }
 
-export async function mint({ type, name, description, author, file, amount, addr }: mintParams) {
+export async function mint({
+  type,
+  name,
+  description,
+  author,
+  file,
+  amount = 1,
+  addr,
+}: mintParams) {
   const assetName = name.replaceAll(' ', '')
-  const artHash = await uploadIpfs(file)
+  const artHash = /* await uploadIpfs(file) */ 'artHash'
   const [policyId, policy] = createPolicy(type, keyHash, tip)
   const NFT = policyId + '.' + assetName
   const metadata = createMetadata(assetName, policyId, {
@@ -131,6 +139,7 @@ export async function mint({ type, name, description, author, file, amount, addr
   }
   const raw = createTransaction(tx)
   const signed = signTransaction(wallet, raw)
-  const txHash = cardano.transactionSubmit(signed)
-  console.log('Minting successful, transaction hash: ', txHash)
+  console.log(raw, signed)
+  // const txHash = cardano.transactionSubmit(signed)
+  // console.log('Minting successful, transaction hash: ', txHash)
 }

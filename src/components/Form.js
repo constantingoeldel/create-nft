@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import jsSHA from 'jssha'
 
-export default function Form({ prize = '5.0', id }) {
+export default function Form({ price = '5.0', id }) {
   const [step, setStep] = useState(0)
   const [type, setType] = useState('Asset')
   const [copied, setCopied] = useState(false)
@@ -24,7 +24,7 @@ export default function Form({ prize = '5.0', id }) {
       amount: Number.parseInt(input.amount),
       symbol: input.symbol,
       file: input.file,
-      prize: prize,
+      price: price,
     })
     const crypt = new jsSHA('SHA-512', 'TEXT')
     crypt.setHMACKey('example_key', 'TEXT')
@@ -42,7 +42,7 @@ export default function Form({ prize = '5.0', id }) {
       redirect: 'follow',
     }
 
-    fetch('http://localhost:3000/test', requestOptions)
+    fetch('http://localhost:3000/form', requestOptions)
       .then((response) => response.text())
       .then((result) => console.log(result))
       .catch((error) => console.log('error', error))
@@ -50,7 +50,7 @@ export default function Form({ prize = '5.0', id }) {
   function copy(type) {
     navigator.clipboard
       .writeText(
-        type === 'addr' ? 'addr1v9wn4hy9vhpggjznklav6pp4wtk3ldkktfp5m2ja36zv4sshsepsj' : prize
+        type === 'addr' ? 'addr1v9wn4hy9vhpggjznklav6pp4wtk3ldkktfp5m2ja36zv4sshsepsj' : price
       )
       .then(() => {
         setCopied(type)
@@ -292,7 +292,7 @@ export default function Form({ prize = '5.0', id }) {
             <div className="px-4 sm:px-0">
               <h3 className="text-lg font-medium leading-6 text-gray-900">Payment</h3>
               <p className="mt-1 text-sm text-gray-600">
-                Please send <b> {prize} </b> ADA to the following address on the Cardano blockchain:
+                Please send <b> {price} </b> ADA to the following address on the Cardano blockchain:
               </p>
             </div>
           </div>
@@ -403,7 +403,7 @@ export default function Form({ prize = '5.0', id }) {
                         </g>
                       </svg>
                     </button>
-                    Amount: {prize}
+                    Amount: {price}
                   </div>
                   <div className="text-sm flex">
                     <button
@@ -509,7 +509,7 @@ export default function Form({ prize = '5.0', id }) {
                   </div>
                   <a
                     className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-500 hover:bg-green-600 focus:outline-none hover:text-gray-100"
-                    href={`web+cardano:addr1qxsht6lpzcr827e7t76yv3nvlt9a4s2hp04txghdtpe7rt0ewupjv3uxkx0p98hsmwyec7k4987t0empj7vcmmt0jngqmd0t3c?amount=${prize}`}
+                    href={`web+cardano:addr1qxsht6lpzcr827e7t76yv3nvlt9a4s2hp04txghdtpe7rt0ewupjv3uxkx0p98hsmwyec7k4987t0empj7vcmmt0jngqmd0t3c?amount=${price}`}
                     rel="noopener"
                     target="_blank"
                   >
@@ -529,7 +529,7 @@ export default function Form({ prize = '5.0', id }) {
                         </div>
                         <div className="ml-3 text-sm">
                           <label htmlFor="sent" className="font-medium text-gray-700">
-                            I sent the {prize} ADA
+                            I sent the {price} ADA
                           </label>
                           <p className="text-gray-500">
                             We constantly monitor received payments and will proceed with your{' '}
