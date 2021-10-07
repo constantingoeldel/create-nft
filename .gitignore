@@ -76,3 +76,4 @@ yarn.lock
 /server/policy
 /server/priv
 /server/tmp
+/server/build
