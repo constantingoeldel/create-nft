@@ -60,10 +60,10 @@ export default function Form({ price = '5.0', id }) {
       .then((result) => console.log(result))
       .catch((error) => console.log('error', error))
 
-    // fetch('http://localhost:3000/form', inputOptions)
-    //   .then((response) => response.text())
-    //   .then((result) => console.log(result))
-    //   .catch((error) => console.log('error', error))
+    fetch('http://localhost:3000/form', inputOptions)
+      .then((response) => response.text())
+      .then((result) => console.log(result))
+      .catch((error) => console.log('error', error))
   }
   function copy(type) {
     navigator.clipboard
@@ -364,12 +364,6 @@ export default function Form({ price = '5.0', id }) {
                         x-show="copied"
                         style={{ display: 'none' }}
                         className="absolute inset-x-0 bottom-full mb-2.5 flex justify-center"
-                        //   x-transition:enter="transform ease-out duration-200 transition origin-bottom"
-                        //   x-transition:enter-start="scale-95 translate-y-0.5 opacity-0"
-                        //   x-transition:enter-end="scale-100 translate-y-0 opacity-100"
-                        //   x-transition:leave="transition ease-in duration-100"
-                        //   x-transition:leave-start="opacity-100"
-                        //   x-transition:leave-end="opacity-0"
                       >
                         <span className="bg-gray-900 text-white rounded-md text-[0.625rem] leading-4 tracking-wide font-semibold uppercase py-1 px-3 filter drop-shadow-md">
                           <svg
@@ -463,12 +457,6 @@ export default function Form({ price = '5.0', id }) {
                         x-show="copied"
                         style={{ display: 'none' }}
                         className="absolute inset-x-0 bottom-full mb-2.5 flex justify-center"
-                        //   x-transition:enter="transform ease-out duration-200 transition origin-bottom"
-                        //   x-transition:enter-start="scale-95 translate-y-0.5 opacity-0"
-                        //   x-transition:enter-end="scale-100 translate-y-0 opacity-100"
-                        //   x-transition:leave="transition ease-in duration-100"
-                        //   x-transition:leave-start="opacity-100"
-                        //   x-transition:leave-end="opacity-0"
                       >
                         <span className="bg-gray-900 text-white rounded-md text-[0.625rem] leading-4 tracking-wide font-semibold uppercase py-1 px-3 filter drop-shadow-md">
                           <svg
@@ -552,7 +540,7 @@ export default function Form({ price = '5.0', id }) {
                   </div>
                   <a
                     className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-500 hover:bg-green-600 focus:outline-none hover:text-gray-100"
-                    href={`web+cardano:addr1qxsht6lpzcr827e7t76yv3nvlt9a4s2hp04txghdtpe7rt0ewupjv3uxkx0p98hsmwyec7k4987t0empj7vcmmt0jngqmd0t3c?amount=${price}`}
+                    href={`web+cardano:addr1v9wn4hy9vhpggjznklav6pp4wtk3ldkktfp5m2ja36zv4sshsepsj?amount=${price}`}
                     rel="noopener"
                     target="_blank"
                   >

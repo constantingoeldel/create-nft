@@ -4,7 +4,7 @@ module.exports = {
     extend: {
       colors: {
         primary: {
-          lighter: 'hsla(222, 100%, 34%, 0.4)', // #0445af
+          lighter: 'hsla(222, 100%, 34%, 0.4)',
           default: 'rgb(42, 97, 187)',
           darker: 'rgb(42, 97, 150)',
         },

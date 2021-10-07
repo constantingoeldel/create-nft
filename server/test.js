@@ -10,14 +10,7 @@ const blockfrost = new BlockFrostAPI({
 })
 
 const wallet = cardano.wallet('Constantin')
-// let utxos = []
-// setInterval(() => {
-//   utxos = cardano.queryUtxo('addr1v9wn4hy9vhpggjznklav6pp4wtk3ldkktfp5m2ja36zv4sshsepsj')
-//   console.table(utxos)
-//   console.log(utxos.map((utxo) => utxo.value))
-// }, 1000)
 
-// Is this rigorous enough? Implement tests
 async function payerAddr(txHash) {
   let info = {
     received: 0,

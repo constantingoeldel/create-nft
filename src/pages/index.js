@@ -1,4 +1,3 @@
-// Different graphics
 import React from 'react'
 import Button from '../components/Button'
 import Card from '../components/Card'
@@ -15,7 +14,7 @@ import SEO from '../components/SEO'
 import Form from '../components/Form'
 
 const Index = () => {
-  const price = (4 + Math.random()).toFixed(4)
+  const price = (1 + Math.random()).toFixed(4)
   const id = uuid()
   return (
     <>

@@ -78,7 +78,6 @@ const signTransaction = (wallet: Wallet, tx: Tx) => {
 }
 
 function createPolicy(type: 'NFT' | 'FT', keyHash: string, tip: number): [string, Policy] {
-  // Include functionality for user to get minting rights, perhaps by sending keys?
   const sig = {
     keyHash: keyHash,
     type: 'sig',

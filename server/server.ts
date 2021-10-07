@@ -1,4 +1,3 @@
-// Yoroi button correctness amount + address
 import { rename } from 'fs'
 import express from 'express'
 import formidable from 'express-formidable'
@@ -82,7 +81,6 @@ server.post('/file', (req, res) => {
     console.log('Upload of file successful. ID: ' + id)
   })
 
-  // writeFileSync(`./tmp/${id}/${req.body.name}`, req.body.file)
   res.end('Success.')
 })
 
@@ -136,8 +134,6 @@ function verifyIntegrity(body: string, sig: string) {
   console.log(hmac)
   return sig === hmac
 }
-
-// sending to customer
 
 async function payerAddr(txHash: string) {
   console.log(txHash)
