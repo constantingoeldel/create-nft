@@ -8,6 +8,7 @@ import { mint } from './mint.js'
 import CardanoCliJs from 'cardanocli-js'
 import { BlockFrostAPI } from '@blockfrost/blockfrost-js'
 import { mintParams } from './mint'
+import helmet from 'helmet'
 config()
 
 interface receivedPayment {
@@ -49,10 +50,11 @@ async function checkUTXOs() {
     checkUTXOs()
   }
 }
-
+checkUTXOs()
 const server = express()
 server.use(express.json())
 server.use(cors())
+server.use(helmet())
 server.use(formidable({ uploadDir: './tmp' }))
 const port = process.env.PORT
 
@@ -90,9 +92,7 @@ server.post('/test', (req, res) => {
   const trust = verifyIntegrity(req.body, req.headers.checksum)
   trust
     ? res.status(200).send('Test request received.').end()
-    : res
-        .status(401)
-        .end('Source not authenticated. Please contact me if you believe this is a mistake.')
+    : res.status(401).end('Source not authenticated.')
 })
 
 server.post('/form', (req, res) => {
@@ -105,9 +105,7 @@ server.post('/form', (req, res) => {
     handleSubmission(req.body)
   } else {
     console.log('Checksum did not match. Aborting.')
-    res
-      .status(401)
-      .end('Source not authenticated. Please contact me if you believe this is a mistake.')
+    res.status(401).end('Source not authenticated.')
   }
 })
 
