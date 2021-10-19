@@ -16,6 +16,7 @@ import Form from '../components/form/Form'
 const Index = () => {
   const price = (1 + Math.random()).toFixed(4)
   const id = uuid()
+
   return (
     <>
       <SEO />

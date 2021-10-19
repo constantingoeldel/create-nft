@@ -14,7 +14,6 @@ export default function Buttons({ setStep, back, next }) {
       {next && (
         <input
           onClick={() => {
-            console.log('input')
             setStep((s) => s + 1)
           }}
           type="submit"

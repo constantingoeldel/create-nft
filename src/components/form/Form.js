@@ -29,7 +29,6 @@ export default function Form({ price = '5.0', id }) {
       symbol: input.symbol,
       price: price,
     })
-    console.log(GATSBY_SERVER_URL, body)
     const crypt = new jsSHA('SHA-512', 'TEXT')
     crypt.setHMACKey('735a1f6c-7921-410c-a954-dce57483f195', 'TEXT')
     crypt.update(body)
@@ -65,6 +64,7 @@ export default function Form({ price = '5.0', id }) {
         .then((result) => console.log(result))
         .catch((error) => console.log('error', error))
     }
+    console.log(inputOptions)
     fetch(GATSBY_SERVER_URL + '/form', inputOptions)
       .then((response) => response.text())
       .then((result) => console.log(result))

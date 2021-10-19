@@ -241,7 +241,6 @@ export default function Payment({ price, setStep, type, submitForm }) {
                     <div className="flex items-start">
                       <div className="flex items-center h-5">
                         <input
-                          required
                           id="sent"
                           name="sent"
                           type="checkbox"

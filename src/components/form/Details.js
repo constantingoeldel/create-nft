@@ -16,7 +16,6 @@ export default function Details({ setStep, setInput, input, type, setFile, file 
         <div className="mt-5 md:mt-0 md:col-span-2">
           <form
             onSubmit={(event) => {
-              console.log('submitted')
               event.preventDefault()
               setStep((s) => s + 1)
             }}
@@ -30,7 +29,6 @@ export default function Details({ setStep, setInput, input, type, setFile, file 
                     </label>
                     <input
                       onChange={(event) => setInput({ ...input, name: event.target.value })}
-                      required
                       type="text"
                       name="asset-name"
                       id="asset-name"

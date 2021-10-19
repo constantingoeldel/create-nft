@@ -101,8 +101,8 @@ server.post('/form', (req, res) => {
   const trust = verifyIntegrity(req.body, req.headers.checksum)
   if (trust) {
     // @ts-ignore
+    res.status(200).end('Submission successful. Checking for payment.')
     handleSubmission(req.body)
-    res.status(200).end()
   } else {
     console.log('Checksum did not match. Aborting.')
     res
