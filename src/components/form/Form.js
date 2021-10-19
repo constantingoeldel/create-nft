@@ -7,6 +7,7 @@ import Payment from './Payment'
 import Status from './Status'
 // Validation
 export default function Form({ price = '5.0', id }) {
+  const { GATSBY_SERVER_URL } = process.env
   const [step, setStep] = useState(0)
   const [type, setType] = useState('NFT')
   const [file, setFile] = useState()
@@ -28,7 +29,7 @@ export default function Form({ price = '5.0', id }) {
       symbol: input.symbol,
       price: price,
     })
-
+    console.log(GATSBY_SERVER_URL, body)
     const crypt = new jsSHA('SHA-512', 'TEXT')
     crypt.setHMACKey('735a1f6c-7921-410c-a954-dce57483f195', 'TEXT')
     crypt.update(body)
@@ -59,19 +60,19 @@ export default function Form({ price = '5.0', id }) {
         redirect: 'follow',
       }
 
-      fetch('http://localhost:3000/file', fileOptions)
+      fetch(GATSBY_SERVER_URL + '/file', fileOptions)
         .then((response) => response.text())
         .then((result) => console.log(result))
         .catch((error) => console.log('error', error))
     }
-    fetch('http://localhost:3000/form', inputOptions)
+    fetch(GATSBY_SERVER_URL + '/form', inputOptions)
       .then((response) => response.text())
       .then((result) => console.log(result))
       .catch((error) => console.log('error', error))
   }
 
   return (
-    <>
+    <section className="mt-10">
       <Divider />
       {step === 0 && <Type setStep={setStep} setType={setType} />}
       {step === 1 && (
@@ -89,6 +90,6 @@ export default function Form({ price = '5.0', id }) {
       )}
       {step === 3 && <Status setStep={setStep} type={type} />}
       <Divider />
-    </>
+    </section>
   )
 }

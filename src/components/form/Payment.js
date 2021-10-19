@@ -33,6 +33,7 @@ export default function Payment({ price, setStep, type, submitForm }) {
           <form
             onSubmit={(event) => {
               event.preventDefault()
+              setStep((s) => s + 1)
               submitForm()
             }}
           >
@@ -260,7 +261,21 @@ export default function Payment({ price, setStep, type, submitForm }) {
                   </div>
                 </fieldset>
               </div>
-              <Buttons setStep={setStep} back={'Back'} next={'Finish'} />
+              <div className="px-4 py-3 bg-gray-50 text-right sm:px-6">
+                <button
+                  type="button"
+                  onClick={() => setStep((s) => s - 1)}
+                  className="inline-flex justify-center py-2 px-4 mr-2  border-2 border-indigo-600 shadow-sm text-sm font-medium rounded-md text-indigo-600 hover:text-indigo-700 bg-white hover:border-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                >
+                  Back
+                </button>
+                <button
+                  type="submit"
+                  className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                >
+                  Finish
+                </button>
+              </div>
             </div>
           </form>
         </div>

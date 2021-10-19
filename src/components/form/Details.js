@@ -14,13 +14,19 @@ export default function Details({ setStep, setInput, input, type, setFile, file 
           </div>
         </div>
         <div className="mt-5 md:mt-0 md:col-span-2">
-          <form onSubmit={(event) => event.preventDefault()}>
+          <form
+            onSubmit={(event) => {
+              console.log('submitted')
+              event.preventDefault()
+              setStep((s) => s + 1)
+            }}
+          >
             <div className="shadow overflow-hidden sm:rounded-md">
               <div className="px-4 py-5 bg-white space-y-6 sm:p-6">
                 <div className="grid grid-cols-6 gap-6">
                   <div className="col-span-6 sm:col-span-3">
                     <label htmlFor="asset-name" className="block text-sm font-medium text-gray-700">
-                      {type} name
+                      {type} name (required)
                     </label>
                     <input
                       onChange={(event) => setInput({ ...input, name: event.target.value })}
@@ -49,7 +55,7 @@ export default function Details({ setStep, setInput, input, type, setFile, file 
                   ) : (
                     <div className="col-span-6 sm:col-span-3">
                       <label htmlFor="symbol" className="block text-sm font-medium text-gray-700">
-                        Token Symbol
+                        Token Symbol (required)
                       </label>
                       <input
                         onChange={(event) =>
@@ -59,6 +65,7 @@ export default function Details({ setStep, setInput, input, type, setFile, file 
                         name="symbol"
                         id="symbol"
                         autoComplete="name"
+                        required
                         value={input.symbol}
                         className="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
                       />
@@ -161,7 +168,21 @@ export default function Details({ setStep, setInput, input, type, setFile, file 
                 </div>
               </div>
 
-              <Buttons setStep={setStep} back={'Back'} next={'Next'} />
+              <div className="px-4 py-3 bg-gray-50 text-right sm:px-6">
+                <button
+                  type="button"
+                  onClick={() => setStep((s) => s - 1)}
+                  className="inline-flex justify-center py-2 px-4 mr-2  border-2 border-indigo-600 shadow-sm text-sm font-medium rounded-md text-indigo-600 hover:text-indigo-700 bg-white hover:border-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                >
+                  Back
+                </button>
+                <button
+                  type="submit"
+                  className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                >
+                  Next
+                </button>
+              </div>
             </div>
           </form>
         </div>
