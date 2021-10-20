@@ -1,6 +1,28 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 
-export default function Status({ type, setStep }) {
+export default function Status({ step, type, setStep, id }) {
+  const { GATSBY_SERVER_URL } = process.env
+  const [status, setStatus] = useState({
+    id: id,
+    received: false,
+    paid: false,
+    minted: false,
+    uploaded: false,
+  })
+  const statusOptions = {
+    method: 'GET',
+    redirect: 'follow',
+  }
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetch(GATSBY_SERVER_URL + '/status/' + id, statusOptions)
+        .then((response) => response.text())
+        .then((result) => setStatus({ result }))
+        .catch((error) => console.log('error', error))
+    }, 1000)
+    return () => clearInterval(interval)
+  }, [step])
+
   return (
     <div className="mt-10 sm:mt-0">
       <div className="md:grid md:grid-cols-3 md:gap-6">
@@ -14,7 +36,12 @@ export default function Status({ type, setStep }) {
           </div>
         </div>
         <div className="mt-5 md:mt-0 md:col-span-2">
-          <form onSubmit={(e) => e.preventDefault()}>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault()
+              setStep(0)
+            }}
+          >
             <div className="shadow overflow-hidden sm:rounded-md">
               <div className="px-4 py-5 bg-white space-y-6 sm:p-6">
                 <div className="grid grid-cols-6 gap-6">
@@ -52,9 +79,7 @@ export default function Status({ type, setStep }) {
                                     </div>
                                   </td>
                                   <td className="px-6 py-4 whitespace-nowrap">
-                                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                                      Pending
-                                    </span>
+                                    {status.paid ? <Successful /> : <Pending />}
                                   </td>
                                 </tr>
                                 <tr key={'upload'}>
@@ -68,9 +93,15 @@ export default function Status({ type, setStep }) {
                                     </div>
                                   </td>
                                   <td className="px-6 py-4 whitespace-nowrap">
-                                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                                      Queued
-                                    </span>
+                                    {status.paid ? (
+                                      status.uploaded ? (
+                                        <Successful />
+                                      ) : (
+                                        <Pending />
+                                      )
+                                    ) : (
+                                      <Queued />
+                                    )}
                                   </td>
                                 </tr>
                                 <tr key={'Minting'}>
@@ -84,9 +115,15 @@ export default function Status({ type, setStep }) {
                                     </div>
                                   </td>
                                   <td className="px-6 py-4 whitespace-nowrap">
-                                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                                      Queued
-                                    </span>
+                                    {status.paid ? (
+                                      status.minted ? (
+                                        <Successful />
+                                      ) : (
+                                        <Pending />
+                                      )
+                                    ) : (
+                                      <Queued />
+                                    )}
                                   </td>
                                 </tr>
                               </tbody>
@@ -101,7 +138,6 @@ export default function Status({ type, setStep }) {
 
               <div className="px-4 py-3 bg-gray-50 text-right sm:px-6">
                 <button
-                  onClick={() => setStep(0)}
                   type="submit"
                   className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                 >
@@ -113,5 +149,28 @@ export default function Status({ type, setStep }) {
         </div>
       </div>
     </div>
+  )
+}
+function Successful() {
+  return (
+    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+      Successful
+    </span>
+  )
+}
+
+function Pending() {
+  return (
+    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+      Pending
+    </span>
+  )
+}
+
+function Queued() {
+  return (
+    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+      Queued
+    </span>
   )
 }

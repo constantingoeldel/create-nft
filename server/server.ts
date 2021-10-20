@@ -50,15 +50,15 @@ async function checkUTXOs() {
     checkUTXOs()
   }
 }
-checkUTXOs()
+// checkUTXOs()
 const server = express()
 server.use(express.json())
 server.use(cors())
-server.use(helmet())
+// server.use(helmet())
 server.use(formidable({ uploadDir: './tmp' }))
 const port = process.env.PORT
 
-server.get('/', (req, res) => {
+server.get('/', (_, res) => {
   console.log('Request received: GET / ')
   res
     .send(
@@ -67,7 +67,20 @@ server.get('/', (req, res) => {
     .status(200)
     .end()
 })
-
+server.post('/form', (req, res) => {
+  console.log('Here')
+  // @ts-ignore
+  const trust = verifyIntegrity(req.body, req.headers.checksum)
+  console.log('Request received: POST /form with ID ' + req.body.id)
+  if (!trust) {
+    console.log('Checksum did not match. Aborting.')
+    res.status(401).end('Source not authenticated.')
+    return
+  }
+  // @ts-ignore
+  res.status(200).end('Submission successful. Checking for payment.')
+  handleSubmission(req.body)
+})
 server.post('/file', (req, res) => {
   const files = req.files
   if (!files) {
@@ -81,32 +94,27 @@ server.post('/file', (req, res) => {
   rename('./' + file.path, './tmp/' + id + '_' + file.name, (err) => {
     if (err) throw err
     console.log('Upload of file successful. ID: ' + id)
+    res.end('Success.')
   })
-
-  res.end('Success.')
 })
 
-server.post('/test', (req, res) => {
-  console.log(req.body)
-  //@ts-ignore
-  const trust = verifyIntegrity(req.body, req.headers.checksum)
-  trust
-    ? res.status(200).send('Test request received.').end()
-    : res.status(401).end('Source not authenticated.')
-})
-
-server.post('/form', (req, res) => {
-  console.log('Request received: POST /form ')
-  // @ts-ignore
-  const trust = verifyIntegrity(req.body, req.headers.checksum)
-  if (trust) {
-    // @ts-ignore
-    res.status(200).end('Submission successful. Checking for payment.')
-    handleSubmission(req.body)
-  } else {
-    console.log('Checksum did not match. Aborting.')
-    res.status(401).end('Source not authenticated.')
+server.get('/status/:id', (req, res) => {
+  const id = req.params.id
+  const request = openRequests.find((request) => request.id === id)
+  if (!request) {
+    res.status(404).end('Request with ID ' + id + ' not found')
+    return
   }
+  res
+    .status(200)
+    .json({
+      id: id,
+      received: true,
+      paid: request.paid,
+      uploaded: !!request.file,
+      minted: request.minted,
+    })
+    .end()
 })
 
 server.listen(port, () => {

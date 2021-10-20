@@ -20,7 +20,7 @@ export default function Form({ price = '5.0', id }) {
   })
   function submitForm() {
     const body = JSON.stringify({
-      id: id,
+      id,
       type,
       name: input.name,
       author: input.author,
@@ -70,25 +70,25 @@ export default function Form({ price = '5.0', id }) {
       .then((result) => console.log(result))
       .catch((error) => console.log('error', error))
   }
-
+  const steps = {
+    [0]: () => <Type setStep={setStep} setType={setType} />,
+    [1]: () => (
+      <Details
+        setFile={setFile}
+        file={file}
+        setInput={setInput}
+        input={input}
+        type={type}
+        setStep={setStep}
+      />
+    ),
+    [2]: () => <Payment setStep={setStep} type={type} price={price} submitForm={submitForm} />,
+    [3]: () => <Status step={step} id={id} setStep={setStep} type={type} />,
+  }
   return (
     <section className="mt-10">
       <Divider />
-      {step === 0 && <Type setStep={setStep} setType={setType} />}
-      {step === 1 && (
-        <Details
-          setFile={setFile}
-          file={file}
-          setInput={setInput}
-          input={input}
-          type={type}
-          setStep={setStep}
-        />
-      )}
-      {step === 2 && (
-        <Payment setStep={setStep} type={type} price={price} submitForm={submitForm} />
-      )}
-      {step === 3 && <Status setStep={setStep} type={type} />}
+      {steps[step]()}
       <Divider />
     </section>
   )

@@ -53,6 +53,7 @@ export interface mintParams {
   addr: string
   price: number
   paid: boolean
+  minted: false | string
 }
 const shelleyGenesisPath = process.env.GENESIS_PATH || ''
 const cardano = new CardanoCliJs({ shelleyGenesisPath })
