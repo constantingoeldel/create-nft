@@ -91,10 +91,13 @@ export default function Details({ setStep, setInput, input, type, setFile, file 
                         Desired Amount
                       </label>
                       <input
-                        onChange={(event) => setInput({ ...input, amount: event.target.value })}
+                        onChange={(event) =>
+                          setInput({ ...input, amount: Number.parseInt(event.target.value) })
+                        }
                         type="number"
                         name="amount"
                         id="amount"
+                        min="1"
                         value={input.amount}
                         className="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
                       />

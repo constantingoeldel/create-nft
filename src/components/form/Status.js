@@ -68,6 +68,20 @@ export default function Status({ step, type, setStep, id }) {
                                 </tr>
                               </thead>
                               <tbody className="bg-white divide-y divide-gray-200">
+                                <tr key={'upload'}>
+                                  <td className="px-6 py-4 whitespace-nowrap">
+                                    <div className="flex items-center">
+                                      <div className="ml-4">
+                                        <div className="text-sm font-medium text-gray-900">
+                                          Upload
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap">
+                                    {status.uploaded ? <Successful /> : <Pending />}
+                                  </td>
+                                </tr>
                                 <tr key={'payment'}>
                                   <td className="px-6 py-4 whitespace-nowrap">
                                     <div className="flex items-center">
@@ -80,28 +94,6 @@ export default function Status({ step, type, setStep, id }) {
                                   </td>
                                   <td className="px-6 py-4 whitespace-nowrap">
                                     {status.paid ? <Successful /> : <Pending />}
-                                  </td>
-                                </tr>
-                                <tr key={'upload'}>
-                                  <td className="px-6 py-4 whitespace-nowrap">
-                                    <div className="flex items-center">
-                                      <div className="ml-4">
-                                        <div className="text-sm font-medium text-gray-900">
-                                          Upload
-                                        </div>
-                                      </div>
-                                    </div>
-                                  </td>
-                                  <td className="px-6 py-4 whitespace-nowrap">
-                                    {status.paid ? (
-                                      status.uploaded ? (
-                                        <Successful />
-                                      ) : (
-                                        <Pending />
-                                      )
-                                    ) : (
-                                      <Queued />
-                                    )}
                                   </td>
                                 </tr>
                                 <tr key={'Minting'}>

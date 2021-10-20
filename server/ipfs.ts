@@ -1,15 +1,14 @@
 import { config } from 'dotenv'
 import unirest from 'unirest'
-import { createWriteStream } from 'fs'
-import request from 'request'
+import { readFileSync } from 'fs'
 config()
 
-export default async function uploadIpfs(uri: string): Promise<string> {
-  const file = await downloadFile(uri)
+export default async function uploadIpfs(path: string): Promise<string> {
+  const file = readFileSync(path)
   const artHash: string = await new Promise((resolve, reject) => {
     unirest('POST', 'https://ipfs.blockfrost.io/api/v0/ipfs/add')
       .headers({
-        project_id: process.env.BLOCKFROST_API_KEY,
+        project_id: process.env.BLOCKFROST_API_KEY_IPFS,
       })
       .attach('file', file)
       .end((res: { error: string; body: { ipfs_hash: string } }) => {
@@ -24,20 +23,10 @@ export default async function uploadIpfs(uri: string): Promise<string> {
   function pinIpfs(hash: string) {
     const req = unirest('POST', 'https://ipfs.blockfrost.io/api/v0/ipfs/pin/add/' + hash)
       .headers({
-        project_id: process.env.BLOCKFROST_API_KEY,
+        project_id: process.env.BLOCKFROST_API_KEY_IPFS,
       })
       .end(function (res: { error: string }) {
         if (res.error) throw new Error(res.error)
       })
   }
-}
-async function downloadFile(uri: string) {
-  const extention = uri.split('.')[uri.split('.').length - 1]
-  const filename = './tmp/' + uri.split('/')[5] + '.' + extention
-  await new Promise((resolve, reject) => {
-    request(uri)
-      .pipe(createWriteStream(filename))
-      .on('close', (err: string) => (err ? reject(err) : resolve(filename)))
-  })
-  return filename
 }

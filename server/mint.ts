@@ -94,7 +94,7 @@ function createPolicy(type: 'NFT' | 'FT', keyHash: string, tip: number): [string
     ],
   }
 
-  return [cardano.transactionPolicyid(type === 'NFT' ? policy : sig), policy]
+  return [cardano.transactionPolicyid(policy), policy]
 }
 
 function createMetadata(assetName: string, policyId: string, optionalMetadata: {}) {
@@ -117,7 +117,7 @@ export async function mint({
   addr,
 }: mintParams) {
   const assetName = name.replaceAll(' ', '')
-  const artHash = /* await uploadIpfs(file) */ 'artHash'
+  const artHash = file ? await uploadIpfs(file) : ''
   const [policyId, policy] = createPolicy(type, keyHash, tip)
   const NFT = policyId + '.' + assetName
   const metadata = createMetadata(assetName, policyId, {

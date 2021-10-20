@@ -6,66 +6,57 @@ import Details from './Details'
 import Payment from './Payment'
 import Status from './Status'
 // Validation
-export default function Form({ price = '5.0', id }) {
+export default function Form({ price = 5.0, id }) {
   const { GATSBY_SERVER_URL } = process.env
   const [step, setStep] = useState(0)
   const [type, setType] = useState('NFT')
   const [file, setFile] = useState()
   const [input, setInput] = useState({
-    name: '',
     author: '',
     description: '',
-    amount: '1',
     symbol: '',
+    amount: 1,
+    description: '',
+    name: '',
   })
   function submitForm() {
-    const body = JSON.stringify({
+    const content = JSON.stringify({
       id,
       type,
+      price: String(price),
       name: input.name,
       author: input.author,
       description: input.description,
-      amount: Number.parseInt(input.amount),
       symbol: input.symbol,
-      price: price,
+      amount: String(input.amount),
     })
     const crypt = new jsSHA('SHA-512', 'TEXT')
     crypt.setHMACKey('735a1f6c-7921-410c-a954-dce57483f195', 'TEXT')
-    crypt.update(body)
+    crypt.update(content)
     const hmac = crypt.getHMAC('HEX')
+    console.log(hmac, content)
+    const headers = new Headers()
+    headers.append('checksum', hmac)
 
-    const dataHeaders = new Headers()
-    dataHeaders.append('checksum', hmac)
-    dataHeaders.append('Content-Type', 'application/json')
+    const body = new FormData()
+    file && body.append('file', file, file.name)
+    body.append('id', id)
+    body.append('type', type)
+    body.append('price', price)
+    body.append('name', input.name)
+    body.append('author', input.author || '')
+    body.append('description', input.description || '')
+    body.append('symbol', input.symbol || '')
+    body.append('amount', input.amount)
 
-    const inputOptions = {
+    const options = {
       method: 'POST',
-      headers: dataHeaders,
-      body: body,
+      headers,
+      body,
       redirect: 'follow',
     }
 
-    if (file) {
-      const fileHeaders = new Headers()
-      fileHeaders.append('id', id)
-
-      const fileData = new FormData()
-      fileData.append('file', file, file.name)
-
-      const fileOptions = {
-        method: 'POST',
-        headers: fileHeaders,
-        body: fileData,
-        redirect: 'follow',
-      }
-
-      fetch(GATSBY_SERVER_URL + '/file', fileOptions)
-        .then((response) => response.text())
-        .then((result) => console.log(result))
-        .catch((error) => console.log('error', error))
-    }
-    console.log(inputOptions)
-    fetch(GATSBY_SERVER_URL + '/form', inputOptions)
+    fetch(GATSBY_SERVER_URL + '/form', options)
       .then((response) => response.text())
       .then((result) => console.log(result))
       .catch((error) => console.log('error', error))
