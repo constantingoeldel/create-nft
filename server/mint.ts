@@ -146,7 +146,7 @@ export async function mint({
   const raw = createTransaction(tx)
   const signed = signTransaction(wallet, raw)
   logger.info({ message: 'Transaction ready to be submitted', raw: raw, signed: signed })
-  const txHash = /* cardano.transactionSubmit(signed) */ ''
+  const txHash = cardano.transactionSubmit(signed)
   txHash &&
     logger.info({
       message: 'Minting successful, transaction hash: ' + txHash,
