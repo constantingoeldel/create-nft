@@ -1,6 +1,7 @@
 import { config } from 'dotenv'
 import uploadIpfs from './ipfs.js'
 import CardanoCliJs from 'cardanocli-js'
+import { logger } from './server.js'
 config()
 
 interface Policy {}
@@ -66,7 +67,7 @@ const wallet: Wallet = cardano.wallet('Constantin')
 function createTransaction(tx: Tx): Tx {
   const rawTx = cardano.transactionBuildRaw(tx)
   const fee = cardano.transactionCalculateMinFee({ ...tx, txBody: rawTx })
-  console.log('Transaction cost: ', fee)
+  logger.info('Transaction cost: ' + fee)
   tx.txOut[0].value.lovelace -= fee
   return cardano.transactionBuildRaw({ ...tx, fee })
 }
@@ -116,6 +117,11 @@ export async function mint({
   amount = 1,
   addr,
 }: mintParams) {
+  logger.info({
+    message: `Starting to mint ${amount} ${type} named ${name}`,
+    type: 'mint',
+    media: !!file,
+  })
   const assetName = name.replaceAll(' ', '')
   const artHash = file ? await uploadIpfs(file) : ''
   const [policyId, policy] = createPolicy(type, keyHash, tip)
@@ -139,7 +145,12 @@ export async function mint({
   }
   const raw = createTransaction(tx)
   const signed = signTransaction(wallet, raw)
-  console.log(raw, signed)
-  // const txHash = cardano.transactionSubmit(signed)
-  // console.log('Minting successful, transaction hash: ', txHash)
+  logger.info({ message: 'Transaction ready to be submitted', raw: raw, signed: signed })
+  const txHash = /* cardano.transactionSubmit(signed) */ ''
+  txHash &&
+    logger.info({
+      message: 'Minting successful, transaction hash: ' + txHash,
+      txHash: txHash,
+      type: 'SUCCESS',
+    })
 }
