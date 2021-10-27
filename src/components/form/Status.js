@@ -8,6 +8,7 @@ export default function Status({ step, type, setStep, id }) {
     paid: false,
     minted: false,
     uploaded: false,
+    policy: '',
   })
   const statusOptions = {
     method: 'GET',
@@ -32,6 +33,12 @@ export default function Status({ step, type, setStep, id }) {
             <p className="mt-1 text-sm text-gray-600">
               We are waiting for the payment to be confirmed. This can take up to 3 minutes. After
               we receive the payment, your {type} will be minted.
+              {status.minted && status.policy && (
+                <p className="mt-1 text-sm text-gray-600">
+                  Your token has been successfully minted. You can see your token here:{' '}
+                  <a href={`https://pool.pm/${status.policy}`}>Pool.pm</a>
+                </p>
+              )}
             </p>
           </div>
         </div>

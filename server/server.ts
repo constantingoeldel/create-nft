@@ -167,7 +167,7 @@ server.get('/status/:id', (req, res) => {
       paid: request.paid,
       uploaded: !!request.file,
       minted: request.minted,
-      name: request.name,
+      policy: request.policy,
     })
     .end()
 })
