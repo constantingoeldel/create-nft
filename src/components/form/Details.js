@@ -1,5 +1,4 @@
 import React from 'react'
-import Buttons from './StepButton'
 
 export default function Details({ setStep, setInput, input, type, setFile, file }) {
   const fileURL = file ? URL.createObjectURL(file) : ''
@@ -32,6 +31,7 @@ export default function Details({ setStep, setInput, input, type, setFile, file 
                       type="text"
                       name="asset-name"
                       id="asset-name"
+                      required
                       autoComplete="username"
                       className="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
                     />

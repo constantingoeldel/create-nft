@@ -17,7 +17,7 @@ export default function Status({ step, type, setStep, id }) {
     const interval = setInterval(() => {
       fetch(GATSBY_SERVER_URL + '/status/' + id, statusOptions)
         .then((response) => response.text())
-        .then((result) => setStatus({ result }))
+        .then((result) => setStatus(JSON.parse(result)))
         .catch((error) => console.log('error', error))
     }, 1000)
     return () => clearInterval(interval)
@@ -73,7 +73,7 @@ export default function Status({ step, type, setStep, id }) {
                                     <div className="flex items-center">
                                       <div className="ml-4">
                                         <div className="text-sm font-medium text-gray-900">
-                                          Upload
+                                          Upload (optional)
                                         </div>
                                       </div>
                                     </div>

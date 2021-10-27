@@ -1,5 +1,5 @@
 import { renameSync } from 'fs'
-import express, { request } from 'express'
+import express from 'express'
 import formidable from 'express-formidable'
 import cors from 'cors'
 import { config } from 'dotenv'
@@ -7,7 +7,7 @@ import crypto from 'crypto'
 import { mint } from './mint.js'
 import CardanoCliJs from 'cardanocli-js'
 import { BlockFrostAPI } from '@blockfrost/blockfrost-js'
-import { mintParams } from './mint'
+import { mintParams, Tx } from './mint'
 import helmet from 'helmet'
 import winston from 'winston'
 import LokiTransport from 'winston-loki'
@@ -19,7 +19,12 @@ interface receivedPayment {
   payer: string
 }
 
-const options = {
+interface Request {
+  body: string
+  headers: { checksum: string }
+}
+
+const logOptions = {
   level: 'verbose',
   format: winston.format.json(),
   defaultMeta: { service: 'API' },
@@ -32,7 +37,7 @@ const options = {
     }),
   ],
 }
-export const logger = winston.createLogger(options)
+export const logger = winston.createLogger(logOptions)
 
 const blockFrostApiKey = process.env.BLOCKFROST_API_KEY_MAINNET || ''
 const blockfrost = new BlockFrostAPI({
@@ -49,35 +54,33 @@ const mongodb = new MongoClient(process.env.MONGODB_URI)
 await mongodb.connect()
 const db = mongodb.db()
 const requests = db.collection<mintParams>('requests')
-const mints = db.collection<mintParams>('mints')
+const mints = db.collection<Tx & { policy: string }>('mints')
+const payments = db.collection<receivedPayment>('payments')
 
 let utxos = []
 let receivedPayments: receivedPayment[] = []
 let openRequests: mintParams[] = []
+let paidRequests: mintParams[] = []
+let successfulRequests: mintParams[] = []
 
 async function checkUTXOs() {
   utxos = cardano.queryUtxo('addr1v9wn4hy9vhpggjznklav6pp4wtk3ldkktfp5m2ja36zv4sshsepsj').reverse()
   logger.log({
     level: 'verbose',
-    message:
-      utxos.length +
-      ' open UTXOs' +
-      ' + ' +
-      receivedPayments.length +
-      ' open Payments' +
-      ' + ' +
-      openRequests.length +
-      ' open Requests',
+    message: 'Current status: ',
     utxos: utxos.length,
     payments: receivedPayments.length,
-    requests: openRequests.length,
+    openRequests: openRequests.length,
+    paidRequests: paidRequests.length,
+    successfulRequests: successfulRequests.length,
     type: 'status',
   })
 
   if (receivedPayments.length < utxos.length) {
     try {
-      const payment = await payerAddr(utxos[receivedPayments.length].txHash)
+      const payment: receivedPayment = await payerAddr(utxos[receivedPayments.length].txHash)
       receivedPayments.push(payment)
+      payments.insertOne(payment)
       checkPayment(receivedPayments, openRequests)
       checkUTXOs()
     } catch (error) {
@@ -148,7 +151,10 @@ server.post('/form', async (req, res) => {
 
 server.get('/status/:id', (req, res) => {
   const id = req.params.id
-  const request = openRequests.find((request) => request.id === id)
+  const request =
+    openRequests.find((request) => request.id === id) ||
+    successfulRequests.find((request) => request.id === id) ||
+    paidRequests.find((request) => request.id === id)
   if (!request) {
     res.status(404).end('Request with ID ' + id + ' not found')
     return
@@ -161,6 +167,7 @@ server.get('/status/:id', (req, res) => {
       paid: request.paid,
       uploaded: !!request.file,
       minted: request.minted,
+      name: request.name,
     })
     .end()
 })
@@ -168,10 +175,6 @@ server.get('/status/:id', (req, res) => {
 server.listen(port, () => {
   logger.info('Server running on port ' + port)
 })
-interface Request {
-  body: string
-  headers: { checksum: string }
-}
 
 function verifyIntegrity(body: string, sig: string) {
   const hmac = crypto
@@ -179,7 +182,7 @@ function verifyIntegrity(body: string, sig: string) {
     .createHmac('sha512', process.env.FORM_KEY)
     .update(body)
     .digest('hex')
-  // sig !== hmac && console.log(hmac)
+  sig !== hmac && console.log(hmac)
   return sig === hmac
 }
 
@@ -201,9 +204,9 @@ async function payerAddr(txHash: string) {
   return info
 }
 
-function checkPayment(payments: receivedPayment[], requests: mintParams[]) {
+function checkPayment(payments: receivedPayment[], openRequests: mintParams[]) {
   for (const payment of payments) {
-    for (const [i, req] of requests.entries()) {
+    for (const [i, req] of openRequests.entries()) {
       if (req.price === payment.amount) {
         logger.info({
           message: 'Found match for incoming payment',
@@ -211,10 +214,28 @@ function checkPayment(payments: receivedPayment[], requests: mintParams[]) {
           request: req.id,
           addres: payment.payer,
         })
+        req.paid = true
         req.addr = payment.payer
-        mint(req)
-        requests.splice(i, 1)
+        paidRequests.push(req)
+        openRequests.splice(i, 1)
+        handleMint(req)
       }
     }
+  }
+}
+
+async function handleMint(req: mintParams) {
+  // update stauts, delete payment, save tx
+  try {
+    const minted = await mint(req)
+    receivedPayments = []
+    checkUTXOs()
+    req.minted = minted.txHash
+    req.policy = minted.policy
+    successfulRequests.push(req)
+    paidRequests = paidRequests.filter((request) => request.id !== req.id)
+    mints.insertOne({ ...minted.tx, _id: minted.txHash, policy: minted.policy })
+  } catch (error) {
+    logger.error(error)
   }
 }

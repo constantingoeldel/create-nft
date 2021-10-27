@@ -244,6 +244,7 @@ export default function Payment({ price, setStep, type, submitForm }) {
                           id="sent"
                           name="sent"
                           type="checkbox"
+                          required
                           className="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded"
                         />
                       </div>

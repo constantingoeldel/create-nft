@@ -13,7 +13,7 @@ interface Metadata {
     }
   }
 }
-interface Tx {
+export interface Tx {
   txIn: { txHash: string; txId: string }[]
   txOut: {
     address: string
@@ -55,11 +55,11 @@ export interface mintParams {
   price: number
   paid: boolean
   minted: false | string
+  policy: string
 }
 const shelleyGenesisPath = process.env.GENESIS_PATH || ''
 const cardano = new CardanoCliJs({ shelleyGenesisPath })
 
-const tip: number = cardano.queryTip().slot
 const keyHash: string = process.env.POLICY_KEY || ''
 
 const wallet: Wallet = cardano.wallet('Constantin')
@@ -69,6 +69,7 @@ function createTransaction(tx: Tx): Tx {
   const fee = cardano.transactionCalculateMinFee({ ...tx, txBody: rawTx })
   logger.info('Transaction cost: ' + fee)
   tx.txOut[0].value.lovelace -= fee
+  logger.info(tx)
   return cardano.transactionBuildRaw({ ...tx, fee })
 }
 
@@ -122,6 +123,8 @@ export async function mint({
     type: 'mint',
     media: !!file,
   })
+  const tip: number = cardano.queryTip().slot
+
   const assetName = name.replaceAll(' ', '')
   const artHash = file ? await uploadIpfs(file) : ''
   const [policyId, policy] = createPolicy(type, keyHash, tip)
@@ -135,8 +138,12 @@ export async function mint({
   const tx = {
     txIn: wallet.balance().utxo,
     txOut: [
-      { address: wallet.paymentAddr, value: { ...wallet.balance().value } },
-      { address: addr, value: { lovelace: 1000000, [NFT]: amount } },
+      // @ts-ignore
+      {
+        address: wallet.paymentAddr,
+        value: { ...wallet.balance().value, lovelace: wallet.balance().value.lovelace - 1100000 },
+      },
+      { address: addr, value: { lovelace: 1100000, [NFT]: amount } },
     ],
     mint: [{ action: 'mint', quantity: amount, asset: NFT, script: policy }],
     metadata: metadata,
@@ -153,4 +160,5 @@ export async function mint({
       txHash: txHash,
       type: 'SUCCESS',
     })
+  return { txHash, tx, policy: NFT }
 }
