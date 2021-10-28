@@ -1,99 +1,32 @@
 import { renameSync } from 'fs'
-import express, { request } from 'express'
+import express from 'express'
 import formidable from 'express-formidable'
 import cors from 'cors'
 import { config } from 'dotenv'
 import crypto from 'crypto'
 import { mint } from './mint.js'
 import CardanoCliJs from 'cardanocli-js'
-import { BlockFrostAPI } from '@blockfrost/blockfrost-js'
-import { mintParams, Tx } from './mint'
 import helmet from 'helmet'
-import winston from 'winston'
-import LokiTransport from 'winston-loki'
-import { MongoClient } from 'mongodb'
 import sendMail from './mail.js'
+import logger from './logging.js'
+import { mints, payments, requests } from './db.js'
+import { checkUTXOs } from './utxos.js'
 config()
 
-interface receivedPayment {
-  amount: number
-  payer: string
-}
-
-interface Request {
-  body: string
-  headers: { checksum: string }
-}
-
-const logOptions = {
-  level: 'verbose',
-  format: winston.format.json(),
-  defaultMeta: { service: 'API' },
-  transports: [
-    new winston.transports.Console(),
-    new winston.transports.File({ filename: 'combined.log' }),
-    new LokiTransport({
-      //@ts-ignore
-      host: process.env.GRAPHANA,
-    }),
-  ],
-}
-export const logger = winston.createLogger(logOptions)
-
-const blockFrostApiKey = process.env.BLOCKFROST_API_KEY_MAINNET || ''
-const blockfrost = new BlockFrostAPI({
-  projectId: blockFrostApiKey,
-})
-
+const devMode = process.env.DEV || false
 const shelleyGenesisPath = process.env.GENESIS_PATH || ''
-export const cardano = new CardanoCliJs({ shelleyGenesisPath, network: 'testnet-magic 1097911063' })
 
-export const wallet = cardano.wallet('Testnet')
+export const cardano = devMode
+  ? new CardanoCliJs({ shelleyGenesisPath, network: 'testnet-magic 1097911063' })
+  : new CardanoCliJs({ shelleyGenesisPath })
 
-// @ts-ignore
-const mongodb = new MongoClient(process.env.MONGODB_URI)
-await mongodb.connect()
-const db = mongodb.db()
-const requests = db.collection<mintParams>('requests')
-const mints = db.collection<Tx & { policy: string }>('mints')
-const payments = db.collection<receivedPayment>('payments')
+export const wallet = devMode ? cardano.wallet('Testnet') : cardano.wallet('Constantin')
 
-let utxos = []
-let receivedPayments: receivedPayment[] = []
-let openRequests: mintParams[] = []
-let paidRequests: mintParams[] = []
-let successfulRequests: mintParams[] = []
+export let receivedPayments: receivedPayment[] = []
+export let openRequests: mintParams[] = []
+export let paidRequests: mintParams[] = []
+export let successfulRequests: mintParams[] = []
 
-async function checkUTXOs() {
-  utxos = cardano.queryUtxo(wallet.paymentAddr).reverse()
-  logger.log({
-    level: 'verbose',
-    message: 'Current status: ',
-    utxos: utxos.length,
-    payments: receivedPayments.length,
-    openRequests: openRequests.length,
-    paidRequests: paidRequests.length,
-    successfulRequests: successfulRequests.length,
-    type: 'status',
-  })
-
-  if (receivedPayments.length < utxos.length) {
-    try {
-      const payment: receivedPayment = await payerAddr(utxos[receivedPayments.length].txHash)
-      receivedPayments.push(payment)
-      payments.insertOne(payment)
-      checkPayment(receivedPayments, openRequests)
-      checkUTXOs()
-    } catch (error) {
-      logger.error(error)
-      checkUTXOs()
-    }
-  } else {
-    await new Promise((resolve) => setTimeout(resolve, 20000))
-    checkPayment(receivedPayments, openRequests)
-    checkUTXOs()
-  }
-}
 checkUTXOs()
 const server = express()
 server.use(helmet())
@@ -192,45 +125,7 @@ function verifyIntegrity(body: string, sig: string) {
   return sig === hmac
 }
 
-async function payerAddr(txHash: string) {
-  let info = {
-    amount: 0,
-    payer: '',
-  }
-  const tx = await blockfrost.txsUtxos(txHash)
-  tx.outputs.forEach((output) => {
-    if (output.address === wallet.paymentAddr) {
-      info.amount = Number.parseFloat(
-        //@ts-ignore
-        output.amount.find((a) => a.unit === 'lovelace').quantity
-      )
-      info.payer = tx.inputs[0].address
-    }
-  })
-  return info
-}
-
-function checkPayment(payments: receivedPayment[], openRequests: mintParams[]) {
-  for (const payment of payments) {
-    for (const [i, req] of openRequests.entries()) {
-      if (req.price === payment.amount) {
-        logger.info({
-          message: 'Found match for incoming payment',
-          type: 'match',
-          request: req.id,
-          addres: payment.payer,
-        })
-        req.paid = true
-        req.addr = payment.payer
-        paidRequests.push(req)
-        openRequests.splice(i, 1)
-        handleMint(req)
-      }
-    }
-  }
-}
-
-async function handleMint(req: mintParams) {
+export async function handleMint(req: mintParams) {
   // update stauts, delete payment, save tx
   try {
     const minted = await mint(req)

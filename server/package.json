@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "develop": "tsc -w & nodemon --ignore ./tmp/ ./build/server.js",
+    "develop": "tsc -w & DEV=true nodemon --ignore ./tmp/ ./build/server.js",
     "start": "tsc && node ./build/server.js"
   },
   "author": "",
