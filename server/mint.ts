@@ -1,7 +1,6 @@
 import { config } from 'dotenv'
 import uploadIpfs from './ipfs.js'
-import CardanoCliJs from 'cardanocli-js'
-import { logger } from './server.js'
+import { logger, cardano, wallet } from './server.js'
 config()
 
 interface Policy {}
@@ -58,11 +57,10 @@ export interface mintParams {
   policy: string
 }
 const shelleyGenesisPath = process.env.GENESIS_PATH || ''
-const cardano = new CardanoCliJs({ shelleyGenesisPath })
 
 const keyHash: string = process.env.POLICY_KEY || ''
 
-const wallet: Wallet = cardano.wallet('Constantin')
+const receivingAddr = process.env.STANDARD_ADDR || wallet.paymentAddr
 
 function createTransaction(tx: Tx): Tx {
   const rawTx = cardano.transactionBuildRaw(tx)
@@ -138,9 +136,8 @@ export async function mint({
   const tx = {
     txIn: wallet.balance().utxo,
     txOut: [
-      // @ts-ignore
       {
-        address: wallet.paymentAddr,
+        address: receivingAddr,
         value: { ...wallet.balance().value, lovelace: wallet.balance().value.lovelace - 1100000 },
       },
       { address: addr, value: { lovelace: 1100000, [NFT]: amount } },

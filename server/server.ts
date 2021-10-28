@@ -1,5 +1,5 @@
 import { renameSync } from 'fs'
-import express from 'express'
+import express, { request } from 'express'
 import formidable from 'express-formidable'
 import cors from 'cors'
 import { config } from 'dotenv'
@@ -12,6 +12,7 @@ import helmet from 'helmet'
 import winston from 'winston'
 import LokiTransport from 'winston-loki'
 import { MongoClient } from 'mongodb'
+import sendMail from './mail.js'
 config()
 
 interface receivedPayment {
@@ -45,9 +46,9 @@ const blockfrost = new BlockFrostAPI({
 })
 
 const shelleyGenesisPath = process.env.GENESIS_PATH || ''
-const cardano = new CardanoCliJs({ shelleyGenesisPath })
+export const cardano = new CardanoCliJs({ shelleyGenesisPath, network: 'testnet-magic 1097911063' })
 
-const wallet = cardano.wallet('Constantin')
+export const wallet = cardano.wallet('Testnet')
 
 // @ts-ignore
 const mongodb = new MongoClient(process.env.MONGODB_URI)
@@ -64,7 +65,7 @@ let paidRequests: mintParams[] = []
 let successfulRequests: mintParams[] = []
 
 async function checkUTXOs() {
-  utxos = cardano.queryUtxo('addr1v9wn4hy9vhpggjznklav6pp4wtk3ldkktfp5m2ja36zv4sshsepsj').reverse()
+  utxos = cardano.queryUtxo(wallet.paymentAddr).reverse()
   logger.log({
     level: 'verbose',
     message: 'Current status: ',
@@ -88,7 +89,7 @@ async function checkUTXOs() {
       checkUTXOs()
     }
   } else {
-    await new Promise((resolve) => setTimeout(resolve, 10000))
+    await new Promise((resolve) => setTimeout(resolve, 20000))
     checkPayment(receivedPayments, openRequests)
     checkUTXOs()
   }
@@ -130,6 +131,11 @@ server.post('/form', async (req, res) => {
   if (!trust) {
     logger.http('Checksum did not match. Aborting.')
     res.status(401).end('Source not authenticated.')
+    return
+  }
+  if (openRequests.find((request) => request.id === params.id || request.price === params.price)) {
+    logger.http('Request already exists. Aborting.')
+    res.status(418).end('Request already exists.')
     return
   }
   logger.info('Trusted request received. ID: ', params.id)
@@ -234,8 +240,10 @@ async function handleMint(req: mintParams) {
     req.policy = minted.policy
     successfulRequests.push(req)
     paidRequests = paidRequests.filter((request) => request.id !== req.id)
+    sendMail(`Minting of ${req.type} with ID ${req.id} successful!`)
     mints.insertOne({ ...minted.tx, _id: minted.txHash, policy: minted.policy })
   } catch (error) {
     logger.error(error)
+    sendMail(`There was an error while minting request ${req.id}:  ${error}`)
   }
 }
