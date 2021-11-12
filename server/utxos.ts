@@ -11,7 +11,7 @@ import logger from './logging.js'
 import { payments } from './db.js'
 import { BlockFrostAPI } from '@blockfrost/blockfrost-js'
 
-const devMode = process.env.DEV || false
+const devMode = !!process.env.DEV || false
 
 const blockFrostApiKey = devMode
   ? process.env.BLOCKFROST_API_KEY_TESTNET!
@@ -19,6 +19,7 @@ const blockFrostApiKey = devMode
 
 const blockfrost = new BlockFrostAPI({
   projectId: blockFrostApiKey,
+  isTestnet: devMode,
 })
 
 let utxos = []
@@ -35,6 +36,12 @@ export async function checkUTXOs() {
     successfulRequests: successfulRequests.length,
     type: 'status',
   })
+  if (openRequests.length >= 1 && utxos) {
+    const prices = openRequests.map((req) => req.price)
+    // @ts-ignore
+    const utxoPrices = utxos.map((tx) => tx.value.lovelace)
+    logger.log({ level: 'verbose', message: 'These requests exist: ' + prices, utxos: utxoPrices })
+  }
 
   if (receivedPayments.length < utxos.length) {
     try {
@@ -62,10 +69,7 @@ async function payerAddr(txHash: string) {
   const tx = await blockfrost.txsUtxos(txHash)
   tx.outputs.forEach((output) => {
     if (output.address === wallet.paymentAddr) {
-      info.amount = Number.parseFloat(
-        //@ts-ignore
-        output.amount.find((a) => a.unit === 'lovelace').quantity
-      )
+      info.amount = Number.parseFloat(output.amount.find((a) => a.unit === 'lovelace')!.quantity)
       info.payer = tx.inputs[0].address
     }
   })
@@ -73,6 +77,12 @@ async function payerAddr(txHash: string) {
 }
 
 function checkPayment(payments: receivedPayment[], openRequests: mintParams[]) {
+  logger.log({
+    message: 'Checking payment',
+    payments: payments.length,
+    openRequests: openRequests.length,
+    level: 'verbose',
+  })
   for (const payment of payments) {
     for (const [i, req] of openRequests.entries()) {
       if (req.price === payment.amount) {
@@ -86,8 +96,11 @@ function checkPayment(payments: receivedPayment[], openRequests: mintParams[]) {
         req.addr = payment.payer
         paidRequests.push(req)
         openRequests.splice(i, 1)
+        logger.info('Starting minting process')
         handleMint(req)
       }
     }
   }
 }
+
+// setInterval(() => checkPayment(receivedPayments, openRequests), 10000)

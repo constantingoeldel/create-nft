@@ -9,12 +9,12 @@ import CardanoCliJs from 'cardanocli-js'
 import helmet from 'helmet'
 import sendMail from './mail.js'
 import logger from './logging.js'
-import { mints, payments, requests } from './db.js'
+import { mints, requests } from './db.js'
 import { checkUTXOs } from './utxos.js'
 config()
 
 const devMode = process.env.DEV || false
-const shelleyGenesisPath = process.env.GENESIS_PATH || ''
+const shelleyGenesisPath = process.env.GENESIS_PATH!
 
 export const cardano = devMode
   ? new CardanoCliJs({ shelleyGenesisPath, network: 'testnet-magic 1097911063' })
@@ -81,10 +81,10 @@ server.post('/form', async (req, res) => {
 
   // @ts-ignore
   res.status(200).end('Submission successful. Checking for payment.')
-  params.price = params.price * 1_000_000
+  params.price = Math.round(params.price * 1_000_000)
   params.paid ? mint(params) : openRequests.push(params)
-  const _id = await requests.insertOne(params)
-  logger.info('Added request with id: ' + _id + ' to MongoDB')
+  const inserted = await requests.insertOne(params)
+  logger.info('Added request with id: ' + inserted.insertedId + ' to MongoDB')
   logger.info({ message: 'Currently open requests: ', requests: openRequests })
 })
 
@@ -121,12 +121,11 @@ function verifyIntegrity(body: string, sig: string) {
     .createHmac('sha512', process.env.FORM_KEY)
     .update(body)
     .digest('hex')
-  sig !== hmac && console.log(hmac)
-  return sig === hmac
+  sig !== hmac && devMode && console.log(hmac)
+  return devMode || sig === hmac
 }
 
 export async function handleMint(req: mintParams) {
-  // update stauts, delete payment, save tx
   try {
     const minted = await mint(req)
     receivedPayments = []
@@ -135,10 +134,10 @@ export async function handleMint(req: mintParams) {
     req.policy = minted.policy
     successfulRequests.push(req)
     paidRequests = paidRequests.filter((request) => request.id !== req.id)
-    sendMail(`Minting of ${req.type} with ID ${req.id} successful!`)
+    devMode || sendMail(`Minting of ${req.type} with ID ${req.id} successful!`)
     mints.insertOne({ ...minted.tx, _id: minted.txHash, policy: minted.policy })
   } catch (error) {
     logger.error(error)
-    sendMail(`There was an error while minting request ${req.id}:  ${error}`)
+    devMode || sendMail(`There was an error while minting request ${req.id}:  ${error}`)
   }
 }

@@ -5,8 +5,8 @@
   "main": "server.js",
   "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "develop": "tsc -w & DEV=true nodemon --ignore ./tmp/ ./build/server.js",
+    "testnet": "tsc -w & CARDANO_NODE_SOCKET_PATH=/home/constantin/cardano/db-testnet/node.socket DEV=true nodemon --ignore ./tmp/ ./build/server.js",
+    "develop": "tsc -w & nodemon --ignore ./tmp/ ./build/server.js",
     "start": "tsc && node ./build/server.js"
   },
   "author": "",

@@ -21,7 +21,7 @@ declare interface Tx {
     address: string
     value: { [unit: string]: number }
   }[]
-  mint: {
+  mint?: {
     action: string
     quantity: number
     asset: string

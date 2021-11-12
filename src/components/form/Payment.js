@@ -130,7 +130,11 @@ export default function Payment({ price, setStep, type, submitForm }) {
                       </g>
                     </svg>
                   </button>
-                  Amount: {price}
+
+                  <p className="b overflow-scroll">
+                    Address: <br />
+                    addr1v9wn4hy9vhpggjznklav6pp4wtk3ldkktfp5m2ja36zv4sshsepsj
+                  </p>
                 </div>
                 <div className="text-sm flex">
                   <button
@@ -223,10 +227,7 @@ export default function Payment({ price, setStep, type, submitForm }) {
                       </g>
                     </svg>
                   </button>
-                  <p className="b overflow-scroll">
-                    Address: <br />
-                    addr1v9wn4hy9vhpggjznklav6pp4wtk3ldkktfp5m2ja36zv4sshsepsj
-                  </p>
+                  Amount: {price}
                 </div>
                 <a
                   className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-500 hover:bg-green-600 focus:outline-none hover:text-gray-100"

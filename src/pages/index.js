@@ -9,18 +9,14 @@ import StatsBox from '../components/StatsBox'
 import HeroImage from '../svg/HeroImage'
 import SvgCharts from '../svg/SvgCharts'
 import Header from '../components/layout/Header'
-import { v4 as uuid } from 'uuid'
 import SEO from '../components/SEO'
 import Form from '../components/form/Form'
 
 const Index = () => {
-  const price = (1 + Math.random()).toFixed(4)
-  const id = uuid()
-
   return (
     <>
       <SEO />
-      <Header price={price} id={id} />
+      <Header />
       <section className="pt-10 sm:pt-20 ">
         <div className="container mx-auto px-8 ">
           <div className="text-center ">
@@ -32,7 +28,7 @@ const Index = () => {
               card.
             </p>
           </div>
-          <Form price={price} id={id} />
+          <Form />
         </div>
         <div className="container mx-auto px-8 lg:flex relative z-0 "></div>
       </section>

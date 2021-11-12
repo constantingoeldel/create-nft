@@ -5,11 +5,7 @@ import logger from './logging.js'
 
 config()
 
-const shelleyGenesisPath = process.env.GENESIS_PATH || ''
-
 const keyHash: string = process.env.POLICY_KEY || ''
-
-const receivingAddr = process.env.STANDARD_ADDR || wallet.paymentAddr
 
 export async function mint({
   type,
@@ -20,6 +16,9 @@ export async function mint({
   amount = 1,
   addr,
 }: mintParams) {
+  const receivingAddr: string = process.env.DEV!
+    ? process.env.TESTNET_ADDR!
+    : process.env.STANDARD_ADDR!
   logger.info({
     message: `Starting to mint ${amount} ${type} named ${name}`,
     type: 'mint',
@@ -27,7 +26,11 @@ export async function mint({
   })
   const tip: number = cardano.queryTip().slot
 
-  const assetName = name.replaceAll(' ', '')
+  const assetName = name
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/([^\w]+|\s+)/g, '')
+    .replace(/(^-+|-+$)/, '')
   const artHash = file ? await uploadIpfs(file) : ''
   const [policyId, policy] = createPolicy(type, keyHash, tip)
   const NFT = policyId + '.' + assetName
@@ -42,9 +45,9 @@ export async function mint({
     txOut: [
       {
         address: receivingAddr,
-        value: { ...wallet.balance().value, lovelace: wallet.balance().value.lovelace - 1100000 },
+        value: { ...wallet.balance().value, lovelace: wallet.balance().value.lovelace },
       },
-      { address: addr, value: { lovelace: 1100000, [NFT]: amount } },
+      { address: addr, value: { lovelace: 2100000, [NFT]: amount } },
     ],
     mint: [{ action: 'mint', quantity: amount, asset: NFT, script: policy }],
     metadata: metadata,

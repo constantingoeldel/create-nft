@@ -3,7 +3,7 @@ import AnchorLink from 'react-anchor-link-smooth-scroll'
 import Button from '../Button'
 import Logo from '../../svg/Logo'
 
-const Header = ({ price = 10, id = '100' }) => (
+const Header = () => (
   <header className="sticky top-0 bg-white shadow z-10">
     <div className="container flex flex-row justify-between items-center mx-auto sm:py-4 px-8">
       <Logo />

@@ -1,4 +1,5 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
+import { v4 as uuid } from 'uuid'
 import jsSHA from 'jssha'
 import Divider from './Divider'
 import Type from './Type'
@@ -6,11 +7,13 @@ import Details from './Details'
 import Payment from './Payment'
 import Status from './Status'
 // Validation
-export default function Form({ price = 5.0, id }) {
+export default function Form() {
   const { GATSBY_SERVER_URL } = process.env
   const [step, setStep] = useState(0)
   const [type, setType] = useState('NFT')
   const [file, setFile] = useState()
+  const [price, setPrice] = useState(0)
+  const [id, setId] = useState('')
   const [input, setInput] = useState({
     author: '',
     description: '',
@@ -19,6 +22,12 @@ export default function Form({ price = 5.0, id }) {
     description: '',
     name: '',
   })
+  function newToken() {
+    setPrice(1 + Number(Math.random().toFixed(4)))
+    setId(uuid())
+  }
+  useEffect(() => newToken(), [])
+
   function submitForm() {
     const content = JSON.stringify({
       id,
@@ -74,7 +83,9 @@ export default function Form({ price = 5.0, id }) {
       />
     ),
     [2]: () => <Payment setStep={setStep} type={type} price={price} submitForm={submitForm} />,
-    [3]: () => <Status step={step} id={id} setStep={setStep} type={type} />,
+    [3]: () => (
+      <Status step={step} id={id} setStep={setStep} type={type} newToken={() => newToken} />
+    ),
   }
   return (
     <section className="mt-10">

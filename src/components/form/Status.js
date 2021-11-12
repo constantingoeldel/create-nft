@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 
-export default function Status({ step, type, setStep, id }) {
+export default function Status({ step, type, setStep, id, newToken }) {
   const { GATSBY_SERVER_URL } = process.env
   const [status, setStatus] = useState({
     id: id,
@@ -47,6 +47,7 @@ export default function Status({ step, type, setStep, id }) {
             onSubmit={(e) => {
               e.preventDefault()
               setStep(0)
+              newToken()
             }}
           >
             <div className="shadow overflow-hidden sm:rounded-md">
