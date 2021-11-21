@@ -5,7 +5,8 @@
   "main": "server.js",
   "type": "module",
   "scripts": {
-    "testnet": "tsc -w & CARDANO_NODE_SOCKET_PATH=/home/constantin/cardano/db-testnet/node.socket DEV=true nodemon --ignore ./tmp/ ./build/server.js",
+    "testserver": "tsc -w & CARDANO_NODE_SOCKET_PATH=/cardano/db-testnet/node.socket DEV=true nodemon --ignore ./tmp/ ./build/server.js",
+    "testlocal": "tsc -w & CARDANO_NODE_SOCKET_PATH=~/cardano/db-testnet/node.socket DEV=true nodemon --ignore ./tmp/ ./build/server.js",
     "develop": "tsc -w & nodemon --ignore ./tmp/ ./build/server.js",
     "start": "tsc && node ./build/server.js"
   },

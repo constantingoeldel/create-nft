@@ -60,7 +60,7 @@ server.post('/form', async (req, res) => {
     res.status(418).end('No content.')
     return
   }
-  const trust = req.fields && verifyIntegrity(JSON.stringify(params), checksum)
+  const trust = devMode || verifyIntegrity(JSON.stringify(params), checksum)
   if (!trust) {
     logger.http('Checksum did not match. Aborting.')
     res.status(401).end('Source not authenticated.')
@@ -69,10 +69,12 @@ server.post('/form', async (req, res) => {
   if (file.size > 15 * 1024 * 1024) {
     logger.http('File too large. Aborting.')
     res.status(402).end('File too large.')
+    return
   }
   if (sessions.filter((s) => s.id === params.id && s.price === params.price)) {
     logger.http('Session does not exist. Aborting.')
     res.status(403).end('Session does not exist.')
+    return
   }
   if (requests.find((request) => request.id === params.id || request.price === params.price)) {
     logger.http('Request already exists. Aborting.')
@@ -97,7 +99,7 @@ server.post('/form', async (req, res) => {
 
 server.get('/new', (_, res) => {
   const id = uuidv4()
-  const price = 1 + Math.fround(Math.random() * 10000) / 10000
+  const price = 1 + Math.round(Math.random() * 10000) / 10000
   sessions.push({ id, price })
   res.status(200).json({ id, price }).end()
 })
@@ -133,8 +135,7 @@ function verifyIntegrity(body: string, sig: string) {
     .createHmac('sha512', process.env.FORM_KEY)
     .update(body)
     .digest('hex')
-  sig !== hmac && devMode && console.log(hmac)
-  return devMode || sig === hmac
+  return sig === hmac
 }
 
 export async function handleMint(req: mintParams) {
