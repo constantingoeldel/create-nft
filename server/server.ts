@@ -97,7 +97,7 @@ server.post('/form', async (req, res) => {
 
 server.get('/new', (_, res) => {
   const id = uuidv4()
-  const price = 1 + Number(Math.random().toFixed(4))
+  const price = 1 + Math.fround(Math.random() * 10000) / 10000
   sessions.push({ id, price })
   res.status(200).json({ id, price }).end()
 })
