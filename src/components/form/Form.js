@@ -23,8 +23,12 @@ export default function Form() {
     name: '',
   })
   function newToken() {
-    setPrice(1 + Number(Math.random().toFixed(4)))
-    setId(uuid())
+    fetch(GATSBY_SERVER_URL, +'/new')
+      .then((res) => res.json())
+      .then((res) => {
+        setPrice(res.price)
+        setId(res.id)
+      })
   }
   useEffect(() => newToken(), [])
 

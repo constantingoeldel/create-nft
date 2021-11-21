@@ -9,12 +9,14 @@ import CardanoCliJs from 'cardanocli-js'
 import helmet from 'helmet'
 import sendMail from './mail.js'
 import logger from './logging.js'
-import { mints, requests } from './db.js'
+import { mints, requests as requestsDB } from './db.js'
 import { checkUTXOs } from './utxos.js'
+import { v4 as uuidv4 } from 'uuid'
 config()
 
 const devMode = process.env.DEV || false
 const shelleyGenesisPath = process.env.GENESIS_PATH!
+const port = devMode ? process.env.PORT_TEST! : process.env.PORT!
 
 export const cardano = devMode
   ? new CardanoCliJs({ shelleyGenesisPath, network: 'testnet-magic 1097911063' })
@@ -22,17 +24,15 @@ export const cardano = devMode
 
 export const wallet = devMode ? cardano.wallet('Testnet') : cardano.wallet('Constantin')
 
-export let receivedPayments: receivedPayment[] = []
-export let openRequests: mintParams[] = []
-export let paidRequests: mintParams[] = []
-export let successfulRequests: mintParams[] = []
+export let requests: mintParams[] = []
+
+let sessions: { id: string; price: number }[] = []
 
 checkUTXOs()
 const server = express()
 server.use(helmet())
 server.use(cors())
 server.use(formidable({ uploadDir: './tmp' }))
-const port = process.env.PORT
 
 server.get('/', (_, res) => {
   res
@@ -66,7 +66,15 @@ server.post('/form', async (req, res) => {
     res.status(401).end('Source not authenticated.')
     return
   }
-  if (openRequests.find((request) => request.id === params.id || request.price === params.price)) {
+  if (file.size > 15 * 1024 * 1024) {
+    logger.http('File too large. Aborting.')
+    res.status(402).end('File too large.')
+  }
+  if (sessions.filter((s) => s.id === params.id && s.price === params.price)) {
+    logger.http('Session does not exist. Aborting.')
+    res.status(403).end('Session does not exist.')
+  }
+  if (requests.find((request) => request.id === params.id || request.price === params.price)) {
     logger.http('Request already exists. Aborting.')
     res.status(418).end('Request already exists.')
     return
@@ -82,18 +90,22 @@ server.post('/form', async (req, res) => {
   // @ts-ignore
   res.status(200).end('Submission successful. Checking for payment.')
   params.price = Math.round(params.price * 1_000_000)
-  params.paid ? mint(params) : openRequests.push(params)
-  const inserted = await requests.insertOne(params)
+  requests.push({ ...params, status: 'pending' })
+  const inserted = await requestsDB.insertOne(params)
   logger.info('Added request with id: ' + inserted.insertedId + ' to MongoDB')
-  logger.info({ message: 'Currently open requests: ', requests: openRequests })
+})
+
+server.get('/new', (_, res) => {
+  const id = uuidv4()
+  const price = 1 + Number(Math.random().toFixed(4))
+  sessions.push({ id, price })
+  res.status(200).json({ id, price }).end()
 })
 
 server.get('/status/:id', (req, res) => {
   const id = req.params.id
-  const request =
-    openRequests.find((request) => request.id === id) ||
-    successfulRequests.find((request) => request.id === id) ||
-    paidRequests.find((request) => request.id === id)
+  const request = requests.find((request) => request.id === id)
+
   if (!request) {
     res.status(404).end('Request with ID ' + id + ' not found')
     return
@@ -128,16 +140,20 @@ function verifyIntegrity(body: string, sig: string) {
 export async function handleMint(req: mintParams) {
   try {
     const minted = await mint(req)
-    receivedPayments = []
-    checkUTXOs()
     req.minted = minted.txHash
     req.policy = minted.policy
-    successfulRequests.push(req)
-    paidRequests = paidRequests.filter((request) => request.id !== req.id)
+    updateStatus(req.id, 'minted')
     devMode || sendMail(`Minting of ${req.type} with ID ${req.id} successful!`)
     mints.insertOne({ ...minted.tx, _id: minted.txHash, policy: minted.policy })
   } catch (error) {
     logger.error(error)
     devMode || sendMail(`There was an error while minting request ${req.id}:  ${error}`)
   }
+}
+
+export function updateStatus(id: string, status: 'pending' | 'paid' | 'minted' | 'failed') {
+  requests = requests.map((request) => {
+    if (request.id == id) request.status = status
+    return request
+  })
 }

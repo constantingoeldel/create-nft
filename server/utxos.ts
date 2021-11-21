@@ -1,12 +1,4 @@
-import {
-  cardano,
-  wallet,
-  receivedPayments,
-  openRequests,
-  paidRequests,
-  successfulRequests,
-  handleMint,
-} from './server.js'
+import { cardano, wallet, handleMint, requests, updateStatus } from './server.js'
 import logger from './logging.js'
 import { payments } from './db.js'
 import { BlockFrostAPI } from '@blockfrost/blockfrost-js'
@@ -22,85 +14,72 @@ const blockfrost = new BlockFrostAPI({
   isTestnet: devMode,
 })
 
-let utxos = []
+let receivedPayments: { [txHash: string]: receivedPayment } = {}
 
 export async function checkUTXOs() {
-  utxos = cardano.queryUtxo(wallet.paymentAddr).reverse()
+  let newPaymentRegistered = false
+  const utxos: utxo[] = cardano.queryUtxo(wallet.paymentAddr)
   logger.log({
     level: 'verbose',
     message: 'Current status: ',
     utxos: utxos.length,
     payments: receivedPayments.length,
-    openRequests: openRequests.length,
-    paidRequests: paidRequests.length,
-    successfulRequests: successfulRequests.length,
+    request: requests.length,
     type: 'status',
   })
-  if (openRequests.length >= 1 && utxos) {
-    const prices = openRequests.map((req) => req.price)
-    // @ts-ignore
-    const utxoPrices = utxos.map((tx) => tx.value.lovelace)
-    logger.log({ level: 'verbose', message: 'These requests exist: ' + prices, utxos: utxoPrices })
-  }
 
-  if (receivedPayments.length < utxos.length) {
+  utxos.forEach(async (utxo) => {
+    if (receivedPayments[utxo.txHash]) return
     try {
-      const payment: receivedPayment = await payerAddr(utxos[receivedPayments.length].txHash)
-      receivedPayments.push(payment)
-      payments.insertOne(payment)
-      checkPayment(receivedPayments, openRequests)
-      checkUTXOs()
+      const tx = await blockfrost.txsUtxos(utxo.txHash)
+      const newPayment = { amount: 0, payer: '' }
+      tx.outputs.forEach((output) => {
+        if (output.address === wallet.paymentAddr) {
+          newPayment.amount = Number.parseFloat(
+            output.amount.find((a) => a.unit === 'lovelace')!.quantity
+          )
+          newPayment.payer = tx.inputs[0].address
+        }
+      })
+      receivedPayments[utxo.txHash] = newPayment
+      payments.insertOne(newPayment)
+      checkPayment(
+        newPayment,
+        requests.filter((r) => r.status === 'pending')
+      )
     } catch (error) {
-      logger.error(error)
-      checkUTXOs()
-    }
-  } else {
-    await new Promise((resolve) => setTimeout(resolve, 20000))
-    checkPayment(receivedPayments, openRequests)
-    checkUTXOs()
-  }
-}
-
-async function payerAddr(txHash: string) {
-  let info = {
-    amount: 0,
-    payer: '',
-  }
-  const tx = await blockfrost.txsUtxos(txHash)
-  tx.outputs.forEach((output) => {
-    if (output.address === wallet.paymentAddr) {
-      info.amount = Number.parseFloat(output.amount.find((a) => a.unit === 'lovelace')!.quantity)
-      info.payer = tx.inputs[0].address
+      logger.log({
+        level: 'error',
+        message: 'Error while processing UTXO',
+        error: error,
+        type: 'error',
+      })
     }
   })
-  return info
 }
 
-function checkPayment(payments: receivedPayment[], openRequests: mintParams[]) {
+function checkPayment(payment: receivedPayment, openRequests: mintParams[]) {
   logger.log({
     message: 'Checking payment',
-    payments: payments.length,
+    payment: payment,
     openRequests: openRequests.length,
     level: 'verbose',
   })
-  for (const payment of payments) {
-    for (const [i, req] of openRequests.entries()) {
-      if (req.price === payment.amount) {
-        logger.info({
-          message: 'Found match for incoming payment',
-          type: 'match',
-          request: req.id,
-          addres: payment.payer,
-        })
-        req.paid = true
-        req.addr = payment.payer
-        paidRequests.push(req)
-        openRequests.splice(i, 1)
-        logger.info('Starting minting process')
-        handleMint(req)
-      }
+  for (const [i, req] of openRequests.entries()) {
+    if (req.price === payment.amount) {
+      logger.info({
+        message: 'Found match for incoming payment',
+        type: 'match',
+        request: req.id,
+        addres: payment.payer,
+      })
+      req.paid = true
+      req.addr = payment.payer
+      updateStatus(req.id, 'paid')
+      logger.info('Starting minting process')
+      handleMint(req)
     }
   }
 }
 
-// setInterval(() => checkPayment(receivedPayments, openRequests), 10000)
+setInterval(() => checkUTXOs, 10000)

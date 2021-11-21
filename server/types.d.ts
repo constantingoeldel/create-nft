@@ -6,6 +6,12 @@ declare interface receivedPayment {
   payer: string
 }
 
+declare interface utxo {
+  txHash: string
+  index: number
+  amount: number
+}
+
 declare interface Policy {}
 
 declare interface Metadata {
@@ -58,4 +64,5 @@ declare interface mintParams {
   paid: boolean
   minted: false | string
   policy: string
+  status: 'pending' | 'paid' | 'minted' | 'failed'
 }
