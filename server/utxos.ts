@@ -17,11 +17,10 @@ const blockfrost = new BlockFrostAPI({
 let receivedPayments: { [txHash: string]: receivedPayment } = {}
 
 export async function checkUTXOs() {
-  let newPaymentRegistered = false
   const utxos: utxo[] = cardano.queryUtxo(wallet.paymentAddr)
   logger.log({
     level: 'verbose',
-    message: 'Current status: ',
+    message: 'Status:',
     utxos: utxos.length,
     payments: receivedPayments.length,
     request: requests.length,
@@ -42,10 +41,11 @@ export async function checkUTXOs() {
         }
       })
       receivedPayments[utxo.txHash] = newPayment
+      logger.log({ message: 'New payment received', payment: newPayment, level: 'verbose' })
       payments.insertOne(newPayment)
       checkPayment(
         newPayment,
-        requests.filter((r) => r.status === 'pending')
+        requests.filter((r) => r.status === 'pending' || r.status === 'failed')
       )
     } catch (error) {
       logger.log({
@@ -59,27 +59,19 @@ export async function checkUTXOs() {
 }
 
 function checkPayment(payment: receivedPayment, openRequests: mintParams[]) {
-  logger.log({
-    message: 'Checking payment',
-    payment: payment,
-    openRequests: openRequests.length,
-    level: 'verbose',
-  })
   for (const [i, req] of openRequests.entries()) {
     if (req.price === payment.amount) {
       logger.info({
-        message: 'Found match for incoming payment',
+        message: 'Found match for incoming payment, starting minitng process',
         type: 'match',
         request: req.id,
-        addres: payment.payer,
       })
       req.paid = true
       req.addr = payment.payer
       updateStatus(req.id, 'paid')
-      logger.info('Starting minting process')
       handleMint(req)
     }
   }
 }
 
-setInterval(() => checkUTXOs, 10000)
+setInterval(() => checkUTXOs(), 10000)

@@ -50,6 +50,7 @@ declare interface Wallet {
   }
 }
 declare interface mintParams {
+  timestamp: number
   id: string
   type: 'NFT' | 'FT'
   amount: number

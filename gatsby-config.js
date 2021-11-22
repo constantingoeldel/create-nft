@@ -6,7 +6,7 @@ module.exports = {
     title: `Cardano NFT - mint NFTs and create native tokens`,
     url: `https://cardano-nft.de`,
     description: `The easiest way to create your own NFTs on the cardano blockchain. Mint custom tokens and native assets with ADA or credit card.`,
-    image: '/src/svg/favicon.svg',
+    image: '/images/favicon.svg',
     twitterUsername: 'cgoeldel',
     titleTemplate: '%s · NFT Creator',
   },
@@ -16,6 +16,14 @@ module.exports = {
       resolve: `gatsby-theme-codebushi`,
       options: {
         tailwindConfig: `tailwind.config.js`,
+      },
+    },
+    {
+      resolve: `gatsby-source-filesystem`,
+      options: {
+        name: 'images',
+        path: `${__dirname}/src/svg`,
+        image: 'favicon.svg',
       },
     },
   ],

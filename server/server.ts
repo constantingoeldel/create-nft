@@ -26,9 +26,10 @@ export const wallet = devMode ? cardano.wallet('Testnet') : cardano.wallet('Cons
 
 export let requests: mintParams[] = []
 
-let sessions: { id: string; price: number }[] = []
+let sessions: { id: string; price: number; timestamp: number }[] = []
 
-checkUTXOs()
+requests = await loadRequests()
+await checkUTXOs()
 const server = express()
 server.use(helmet())
 server.use(cors())
@@ -66,14 +67,15 @@ server.post('/form', async (req, res) => {
     res.status(401).end('Source not authenticated.')
     return
   }
-  if (file.size > 15 * 1024 * 1024) {
+  if (file && file.size > 15 * 1024 * 1024) {
     logger.http('File too large. Aborting.')
     res.status(402).end('File too large.')
     return
   }
-  if (sessions.filter((s) => s.id === params.id && s.price === params.price)) {
+  if (!sessions.find((s) => s.id === params.id)) {
+    console.log(params.id, params.price)
     logger.http('Session does not exist. Aborting.')
-    res.status(403).end('Session does not exist.')
+    res.status(403).end('Session does not exist or is expired.')
     return
   }
   if (requests.find((request) => request.id === params.id || request.price === params.price)) {
@@ -92,16 +94,19 @@ server.post('/form', async (req, res) => {
   // @ts-ignore
   res.status(200).end('Submission successful. Checking for payment.')
   params.price = Math.round(params.price * 1_000_000)
-  requests.push({ ...params, status: 'pending' })
-  const inserted = await requestsDB.insertOne(params)
+  const request: mintParams = { ...params, status: 'pending', timestamp: Date.now() }
+  requests.push(request)
+  const inserted = await requestsDB.insertOne(request)
   logger.info('Added request with id: ' + inserted.insertedId + ' to MongoDB')
 })
 
 server.get('/new', (_, res) => {
   const id = uuidv4()
-  const price = 1 + Math.round(Math.random() * 10000) / 10000
-  sessions.push({ id, price })
-  res.status(200).json({ id, price }).end()
+  const price = Math.round(25000 + Math.random() * 10000) / 10000
+  const timestamp = new Date().getTime()
+  sessions.push({ id, price, timestamp })
+  removeOldSessions()
+  res.status(200).json({ id, price, timestamp }).end()
 })
 
 server.get('/status/:id', (req, res) => {
@@ -148,6 +153,7 @@ export async function handleMint(req: mintParams) {
     mints.insertOne({ ...minted.tx, _id: minted.txHash, policy: minted.policy })
   } catch (error) {
     logger.error(error)
+    updateStatus(req.id, 'failed')
     devMode || sendMail(`There was an error while minting request ${req.id}:  ${error}`)
   }
 }
@@ -157,4 +163,22 @@ export function updateStatus(id: string, status: 'pending' | 'paid' | 'minted' |
     if (request.id == id) request.status = status
     return request
   })
+  requestsDB.updateOne({ id }, { $set: { status } })
+}
+
+function removeOldSessions() {
+  sessions = sessions.filter((session) => {
+    return new Date().getTime() - session.timestamp < 60 * 60
+  })
+}
+
+async function loadRequests() {
+  const pastRequests = await requestsDB
+    .find({ status: { $in: ['pending', 'failed'] } })
+    .toArray()
+    .catch((error) => {
+      logger.error(error)
+    })
+  pastRequests && logger.info('Loaded ' + pastRequests.length + ' past requests')
+  return pastRequests || []
 }

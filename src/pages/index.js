@@ -11,8 +11,17 @@ import SvgCharts from '../svg/SvgCharts'
 import Header from '../components/layout/Header'
 import SEO from '../components/SEO'
 import Form from '../components/form/Form'
+import { useState } from 'react'
 
 const Index = () => {
+  const [input, setInput] = useState({
+    author: '',
+    description: '',
+    symbol: '',
+    amount: 1,
+    description: '',
+    name: '',
+  })
   return (
     <>
       <SEO />
@@ -28,7 +37,7 @@ const Index = () => {
               card.
             </p>
           </div>
-          <Form />
+          <Form input={input} setInput={setInput} />
         </div>
         <div className="container mx-auto px-8 lg:flex relative z-0 "></div>
       </section>

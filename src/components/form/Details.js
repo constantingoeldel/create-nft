@@ -1,7 +1,17 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 
-export default function Details({ setStep, setInput, input, type, setFile, file }) {
+export default function Details({
+  setStep,
+  setInput,
+  input,
+  type,
+  setFile,
+  file,
+  submitForm,
+  newToken,
+}) {
   const fileURL = file ? URL.createObjectURL(file) : ''
+  useEffect(() => newToken(), [])
 
   return (
     <div className="mt-10 sm:mt-0">
@@ -17,6 +27,7 @@ export default function Details({ setStep, setInput, input, type, setFile, file 
             onSubmit={(event) => {
               event.preventDefault()
               setStep((s) => s + 1)
+              submitForm()
             }}
           >
             <div className="shadow overflow-hidden sm:rounded-md">
@@ -34,6 +45,7 @@ export default function Details({ setStep, setInput, input, type, setFile, file 
                       required
                       autoComplete="username"
                       className="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
+                      value={input.name}
                     />
                   </div>
                   {type === 'NFT' ? (
@@ -44,6 +56,7 @@ export default function Details({ setStep, setInput, input, type, setFile, file 
                       <input
                         onChange={(event) => setInput({ ...input, author: event.target.value })}
                         type="text"
+                        value={input.author}
                         name="author"
                         id="author"
                         autoComplete="name"
@@ -60,6 +73,7 @@ export default function Details({ setStep, setInput, input, type, setFile, file 
                           setInput({ ...input, symbol: event.target.value.toUpperCase() })
                         }
                         type="text"
+                        value={input.symbol}
                         name="symbol"
                         id="symbol"
                         autoComplete="name"
@@ -80,6 +94,7 @@ export default function Details({ setStep, setInput, input, type, setFile, file 
                     <input
                       onChange={(event) => setInput({ ...input, description: event.target.value })}
                       type="text"
+                      value={input.description}
                       name="description"
                       id="description"
                       className="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
@@ -158,6 +173,7 @@ export default function Details({ setStep, setInput, input, type, setFile, file 
                               name="file-upload"
                               type="file"
                               className="sr-only"
+                              value={file}
                             />
                           </label>
                           <p className="pl-1">or drag and drop</p>
@@ -181,7 +197,7 @@ export default function Details({ setStep, setInput, input, type, setFile, file 
                   type="submit"
                   className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                 >
-                  Next
+                  Send
                 </button>
               </div>
             </div>

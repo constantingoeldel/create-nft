@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react'
-import { v4 as uuid } from 'uuid'
 import jsSHA from 'jssha'
 import Divider from './Divider'
 import Type from './Type'
@@ -7,30 +6,23 @@ import Details from './Details'
 import Payment from './Payment'
 import Status from './Status'
 // Validation
-export default function Form() {
+export default function Form({ input, setInput }) {
   const { GATSBY_SERVER_URL } = process.env
   const [step, setStep] = useState(0)
   const [type, setType] = useState('NFT')
   const [file, setFile] = useState()
-  const [price, setPrice] = useState(0)
-  const [id, setId] = useState('')
-  const [input, setInput] = useState({
-    author: '',
-    description: '',
-    symbol: '',
-    amount: 1,
-    description: '',
-    name: '',
-  })
+  const [price, setPrice] = useState(1)
+  const [id, setId] = useState('fetcherror')
+
   function newToken() {
-    fetch(GATSBY_SERVER_URL, +'/new')
+    fetch(GATSBY_SERVER_URL + '/new')
       .then((res) => res.json())
       .then((res) => {
         setPrice(res.price)
         setId(res.id)
       })
+      .catch((err) => alert(err))
   }
-  useEffect(() => newToken(), [])
 
   function submitForm() {
     const content = JSON.stringify({
@@ -84,9 +76,11 @@ export default function Form() {
         input={input}
         type={type}
         setStep={setStep}
+        submitForm={submitForm}
+        newToken={newToken}
       />
     ),
-    [2]: () => <Payment setStep={setStep} type={type} price={price} submitForm={submitForm} />,
+    [2]: () => <Payment setStep={setStep} type={type} price={price} />,
     [3]: () => (
       <Status step={step} id={id} setStep={setStep} type={type} newToken={() => newToken} />
     ),

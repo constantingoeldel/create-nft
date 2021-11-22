@@ -83,7 +83,7 @@ export default function Status({ step, type, setStep, id, newToken }) {
                                         <div className="flex text-sm font-medium text-gray-900">
                                           Upload (optional)
                                           {status.uploaded || (
-                                            <div class="animate-spin rounded-full mx-4 mt-1 h-4 w-4 border-b-2 border-blue-900"></div>
+                                            <div className="animate-spin rounded-full mx-4 mt-1 h-4 w-4 border-b-2 border-blue-900"></div>
                                           )}
                                         </div>
                                       </div>
@@ -100,7 +100,7 @@ export default function Status({ step, type, setStep, id, newToken }) {
                                         <div className="flex text-sm font-medium text-gray-900">
                                           Payment
                                           {status.paid || (
-                                            <div class="animate-spin rounded-full mx-4 mt-1 h-4 w-4 border-b-2 border-blue-900"></div>
+                                            <div className="animate-spin rounded-full mx-4 mt-1 h-4 w-4 border-b-2 border-blue-900"></div>
                                           )}
                                         </div>
                                       </div>
@@ -116,10 +116,9 @@ export default function Status({ step, type, setStep, id, newToken }) {
                                       <div className="ml-4">
                                         <div className="flex text-sm font-medium text-gray-900">
                                           Minting
-                                          {status.paid &&
-                                            (status.minted || (
-                                              <div class="animate-spin rounded-full mx-4 mt-1 h-4 w-4 border-b-2 border-blue-900"></div>
-                                            ))}
+                                          {status.paid && !status.minted && (
+                                            <div className="animate-spin rounded-full mx-4 mt-1 h-4 w-4 border-b-2 border-blue-900"></div>
+                                          )}
                                         </div>
                                       </div>
                                     </div>

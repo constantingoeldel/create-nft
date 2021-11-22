@@ -1,10 +1,11 @@
 import React, { useState } from 'react'
 import Buttons from './StepButton'
 
-export default function Payment({ price, setStep, type, submitForm }) {
+export default function Payment({ price, setStep, type }) {
   const [copied, setCopied] = useState(false)
 
   function copy(type) {
+    console.log(type, price)
     navigator.clipboard
       .writeText(
         type === 'addr' ? 'addr1v9wn4hy9vhpggjznklav6pp4wtk3ldkktfp5m2ja36zv4sshsepsj' : price
@@ -34,7 +35,6 @@ export default function Payment({ price, setStep, type, submitForm }) {
             onSubmit={(event) => {
               event.preventDefault()
               setStep((s) => s + 1)
-              submitForm()
             }}
           >
             <div className="shadow overflow-hidden sm:rounded-md">
@@ -44,12 +44,12 @@ export default function Payment({ price, setStep, type, submitForm }) {
                     type="button"
                     className="hidden sm:flex sm:items-center sm:justify-center relative w-9 h-9 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 text-gray-400 hover:text-gray-600 group ml-2.5 "
                     style={{
-                      color: copied === 'amount' ? '#06B6D4' : '#acb1bc',
-                      rotate: copied === 'amount' ? '10deg' : '0deg',
+                      color: copied === 'addr' ? '#06B6D4' : '#acb1bc',
+                      rotate: copied === 'addr' ? '10deg' : '0deg',
                     }}
-                    onClick={() => copy('amount')}
+                    onClick={() => copy('addr')}
                   >
-                    <span className="sr-only">Copy amount</span>
+                    <span className="sr-only">Copy address</span>
                     <span
                       x-show="copied"
                       style={{ display: 'none' }}
@@ -141,12 +141,12 @@ export default function Payment({ price, setStep, type, submitForm }) {
                     type="button"
                     className="hidden sm:flex sm:items-center sm:justify-center relative w-9 h-9 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 text-gray-400 hover:text-gray-600 group ml-2.5 "
                     style={{
-                      color: copied === 'addr' ? '#06B6D4' : '#acb1bc',
-                      rotate: copied === 'addr' ? '10deg' : '0deg',
+                      color: copied === 'amount' ? '#06B6D4' : '#acb1bc',
+                      rotate: copied === 'amount' ? '10deg' : '0deg',
                     }}
-                    onClick={() => copy('addr')}
+                    onClick={() => copy('amount')}
                   >
-                    <span className="sr-only">Copy address</span>
+                    <span className="sr-only">Copy amount</span>
                     <span
                       x-show="copied"
                       style={{ display: 'none' }}

@@ -5,6 +5,7 @@ import logger from './logging.js'
 
 config()
 
+const mintDeduction = 1_500_000
 const keyHash: string = process.env.POLICY_KEY || ''
 
 export async function mint({
@@ -45,9 +46,12 @@ export async function mint({
     txOut: [
       {
         address: receivingAddr,
-        value: { ...wallet.balance().value, lovelace: wallet.balance().value.lovelace },
+        value: {
+          ...wallet.balance().value,
+          lovelace: wallet.balance().value.lovelace - mintDeduction,
+        },
       },
-      { address: addr, value: { lovelace: 2100000, [NFT]: amount } },
+      { address: addr, value: { lovelace: mintDeduction, [NFT]: amount } },
     ],
     mint: [{ action: 'mint', quantity: amount, asset: NFT, script: policy }],
     metadata: metadata,
