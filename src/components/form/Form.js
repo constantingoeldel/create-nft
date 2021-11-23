@@ -23,6 +23,13 @@ export default function Form({ input, setInput }) {
       })
       .catch((err) => alert(err))
   }
+  useEffect(() => {
+    fetch(GATSBY_SERVER_URL + '/status/server')
+      .then((res) => {
+        res.status !== 200 && alert('Server not responding, please do not submit any requests.')
+      })
+      .catch((err) => alert('Server not responding, please do not submit any requests.'))
+  }, [])
 
   function submitForm() {
     const content = JSON.stringify({

@@ -10,6 +10,7 @@ const transporter = createTransport({
 })
 
 export default function sendMail(text: string) {
+  if (!process.env.MAIL) return
   const mailConfigurations = {
     from: 'constantingoeldel@gmail.com',
     to: 'constantin.goeldel@tum.de',
@@ -22,3 +23,5 @@ export default function sendMail(text: string) {
     console.log('Email Sent Successfully')
   })
 }
+
+sendMail('test')

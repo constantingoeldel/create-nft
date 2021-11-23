@@ -22,6 +22,7 @@ const Index = () => {
     description: '',
     name: '',
   })
+
   return (
     <>
       <SEO />

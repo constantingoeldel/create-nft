@@ -6,5 +6,6 @@ const db = mongodb.db()
 const requests = db.collection<mintParams>('requests')
 const mints = db.collection<Tx & { policy: string }>('mints')
 const payments = db.collection<receivedPayment>('payments')
+const customers = db.collection<customer>('customers')
 
-export { requests, mints, payments }
+export { requests, mints, payments, customers }

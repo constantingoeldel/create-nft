@@ -37,6 +37,8 @@ export default function Status({ step, type, setStep, id, newToken }) {
                 <p className="mt-1 text-sm text-gray-600">
                   Your token has been successfully minted. You can see your token here:{' '}
                   <a href={`https://pool.pm/${status.policy}`}>Pool.pm</a>
+                  <br />
+                  It can take a few minutes for your token to be visible.
                 </p>
               )}
             </p>
