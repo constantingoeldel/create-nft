@@ -54,47 +54,49 @@ declare type mintParams =
       timestamp: number
       id: string
       type: 'NFT'
-      name: string
       amount: number
-      description?: string
-      author?: string
-      file?: string
+      properties: properties
       addr: string
       price: number
       paid: boolean
       minted: false | string
       policy?: string
+      file?: string
+
       status: 'pending' | 'paid' | 'minted' | 'failed'
     }
   | {
       timestamp: number
       id: string
       type: 'FT'
-      name: string
+      properties: properties
       amount: number
-      description?: string
-      author?: string
-      symbol?: string
-      file?: string
       addr: string
       price: number
       paid: boolean
       minted: false | string
       policy?: string
+      file?: string
+
       status: 'pending' | 'paid' | 'minted' | 'failed'
     }
 
 declare interface request {
   auth: string
   amount?: number
-  properties: {
-    name: string
-    [property: string]: string
-  }
+  properties: properties
 }
 
 declare interface customer {
   token: string
   id: string
   createdAt: number
+}
+
+declare interface properties {
+  name: string
+  description?: string
+  author?: string
+  symbol?: string
+  [property: string]: string
 }

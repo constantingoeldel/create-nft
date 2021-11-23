@@ -182,7 +182,7 @@ async function init() {
       type: type === 'token' ? 'FT' : 'NFT',
       amount: type === 'token' ? request.amount : 1,
       timestamp: Date.now(),
-      ...request.properties,
+      properties: request.properties,
       paid: true,
       status: 'pending',
       minted: false,

@@ -8,26 +8,18 @@ config()
 const mintDeduction = 1_500_000
 const keyHash: string = process.env.POLICY_KEY || ''
 
-export async function mint({
-  type,
-  name,
-  description,
-  author,
-  file,
-  amount = 1,
-  addr,
-}: mintParams) {
+export async function mint({ type, properties, file, amount, addr }: mintParams) {
   const receivingAddr: string = process.env.DEV!
     ? process.env.TESTNET_ADDR!
     : process.env.STANDARD_ADDR!
   logger.info({
-    message: `Starting to mint ${amount} ${type} named ${name}`,
+    message: `Starting to mint ${amount} ${type} named ${properties.name}`,
     type: 'mint',
     media: !!file,
   })
   const tip: number = cardano.queryTip().slot
 
-  const assetName = name
+  const assetName = properties.name
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .replace(/([^\w]+|\s+)/g, '')
@@ -36,10 +28,8 @@ export async function mint({
   const [policyId, policy] = createPolicy(type, keyHash, tip)
   const NFT = policyId + '.' + assetName
   const metadata = createMetadata(assetName, policyId, {
-    name,
     image: 'ipfs://' + artHash,
-    description,
-    author,
+    ...properties,
   })
   const tx = {
     txIn: wallet.balance().utxo,

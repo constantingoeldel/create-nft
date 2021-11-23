@@ -36,10 +36,12 @@ export default function Form({ input, setInput }) {
       id,
       type,
       price: String(price),
-      name: input.name,
-      author: input.author,
-      description: input.description,
-      symbol: input.symbol,
+      properties: {
+        name: input.name,
+        author: input.author,
+        description: input.description,
+        symbol: input.symbol,
+      },
       amount: String(input.amount),
     })
     const crypt = new jsSHA('SHA-512', 'TEXT')
