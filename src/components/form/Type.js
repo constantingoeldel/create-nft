@@ -1,7 +1,7 @@
 import React from 'react'
 import Buttons from './StepButton'
 
-export default function Type({ setStep, setType }) {
+export default function Type({ setStep, setType, type }) {
   return (
     <div className="mt-10 sm:mt-0">
       <div className="md:grid md:grid-cols-3 md:gap-6">
@@ -28,6 +28,7 @@ export default function Type({ setStep, setType }) {
                     <select
                       onChange={(event) => setType(event.target.value)}
                       id="type"
+                      value={type}
                       name="type"
                       className="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                     >

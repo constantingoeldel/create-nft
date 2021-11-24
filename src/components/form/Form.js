@@ -32,16 +32,17 @@ export default function Form({ input, setInput }) {
   }, [])
 
   function submitForm() {
+    const properties = {
+      name: input.name,
+      author: input.author,
+      description: input.description,
+      symbol: input.symbol,
+    }
     const content = JSON.stringify({
       id,
       type,
       price: String(price),
-      properties: {
-        name: input.name,
-        author: input.author,
-        description: input.description,
-        symbol: input.symbol,
-      },
+      properties: properties,
       amount: String(input.amount),
     })
     const crypt = new jsSHA('SHA-512', 'TEXT')
@@ -57,10 +58,7 @@ export default function Form({ input, setInput }) {
     body.append('id', id)
     body.append('type', type)
     body.append('price', price)
-    body.append('name', input.name)
-    body.append('author', input.author || '')
-    body.append('description', input.description || '')
-    body.append('symbol', input.symbol || '')
+    body.append('properties', JSON.stringify(properties))
     body.append('amount', input.amount)
 
     const options = {
@@ -76,7 +74,7 @@ export default function Form({ input, setInput }) {
       .catch((error) => console.log('error', error))
   }
   const steps = {
-    [0]: () => <Type setStep={setStep} setType={setType} />,
+    [0]: () => <Type setStep={setStep} setType={setType} type={type} />,
     [1]: () => (
       <Details
         setFile={setFile}

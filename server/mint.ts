@@ -7,11 +7,11 @@ config()
 
 const mintDeduction = 1_500_000
 const keyHash: string = process.env.POLICY_KEY || ''
+const receivingAddr: string = process.env.DEV!
+  ? process.env.TESTNET_ADDR!
+  : process.env.STANDARD_ADDR!
 
 export async function mint({ type, properties, file, amount, addr }: mintParams) {
-  const receivingAddr: string = process.env.DEV!
-    ? process.env.TESTNET_ADDR!
-    : process.env.STANDARD_ADDR!
   logger.info({
     message: `Starting to mint ${amount} ${type} named ${properties.name}`,
     type: 'mint',

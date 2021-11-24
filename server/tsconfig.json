@@ -68,6 +68,6 @@
     "forceConsistentCasingInFileNames": true /* Disallow inconsistently-cased references to the same file. */
   },
   "watchOptions": {
-    "excludeDirectories": ["./tmp/"]
+    "excludeDirectories": ["./tmp/", "./priv"]
   }
 }

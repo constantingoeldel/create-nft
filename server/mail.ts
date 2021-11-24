@@ -23,5 +23,3 @@ export default function sendMail(text: string) {
     console.log('Email Sent Successfully')
   })
 }
-
-sendMail('test')

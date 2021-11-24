@@ -89,6 +89,7 @@ declare interface request {
 
 declare interface customer {
   token: string
+  paymentAddr: string
   id: string
   createdAt: number
 }

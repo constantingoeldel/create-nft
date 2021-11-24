@@ -45,7 +45,9 @@ export async function checkUTXOs() {
       payments.insertOne(newPayment)
       checkPayment(
         newPayment,
-        requests.filter((r) => r.status === 'pending' || r.status === 'failed')
+        requests.filter(
+          (r) => r.status === 'pending' || r.status === 'failed' || r.status === 'paid'
+        )
       )
     } catch (error) {
       logger.log({
@@ -62,7 +64,7 @@ function checkPayment(payment: receivedPayment, openRequests: mintParams[]) {
   for (const [i, req] of openRequests.entries()) {
     if (req.price === payment.amount) {
       logger.info({
-        message: 'Found match for incoming payment, starting minitng process',
+        message: 'Found match for incoming payment, starting minting process',
         type: 'match',
         request: req.id,
       })

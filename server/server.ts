@@ -11,7 +11,7 @@ import sendMail from './mail.js'
 import logger from './logging.js'
 import { customers, mints, requests as requestsDB } from './db.js'
 import { checkUTXOs } from './utxos.js'
-import { v4 as uuidv4 } from 'uuid'
+import { nanoid } from 'nanoid'
 config()
 
 const devMode = process.env.DEV || false
@@ -97,10 +97,11 @@ async function init() {
       params.file = './tmp/' + params.id + '_' + file.name
       logger.info('Uploaded file: ' + params.file)
     }
-
-    // @ts-ignore
     res.status(200).end('Submission successful. Checking for payment.')
     params.price = Math.round(params.price * 1_000_000)
+    params.amount = Number(params.amount)
+    // @ts-ignore
+    params.properties = JSON.parse(params.properties)
     const request: mintParams = { ...params, status: 'pending', timestamp: Date.now() }
     requests.push(request)
     const inserted = await requestsDB.insertOne(request)
@@ -108,7 +109,7 @@ async function init() {
   })
 
   server.get('/new', (_, res) => {
-    const id = uuidv4()
+    const id = nanoid()
     const price = Math.round(25000 + Math.random() * 10000) / 10000
     const timestamp = new Date().getTime()
     sessions.push({ id, price, timestamp })
@@ -148,27 +149,52 @@ async function init() {
         'This is the programmatic API to create NFTs and Native Tokens on the Cardano blockchain. See the documentation here: https://cardano-nft.de/docs '
       )
   })
+  server.get('/v0/new', (_, res) => {
+    const id = nanoid()
+    const wallet = cardano.addressKeyGen(id)
+    console.log(wallet)
+    cardano.addressBuild(id, { paymentVkey: wallet.vkey })
+    const paymentAddr: string = cardano.wallet(id).paymentAddr
+    const token = nanoid()
+    const createdAt = Date.now()
+
+    customers.insertOne({ id, paymentAddr, token, createdAt })
+    logger.log({ message: 'Created new customer: ' + id, level: 'info' })
+    res.status(200).json({ paymentAddr, token }).end()
+  })
 
   server.post('/v0/create/:type', async (req, res) => {
-    const request: request = req.body()
+    // @ts-ignore
+    const request: request = req.fields
+    if (!request) {
+      res.status(400).end('No request provided')
+      return
+    }
     const customer = await customers.findOne({ token: request.auth })
     if (!customer) {
+      logger.info('Customer not found')
       res.status(401).end('Not authenticated')
       return
     }
-    if ((req.params.type && req.params.type !== 'nft') || req.params.type !== 'token') {
+    console.log(req.params.type)
+    const correctType = req.params.type === 'nft' || req.params.type === 'native'
+    if (!correctType) {
+      logger.info('Invalid type')
       res.status(400).end('Not a valid token type')
       return
     }
+    // @ts-ignore
     const type: 'nft' | 'token' = req.params.type
     request.amount = type === 'token' ? request.amount : 1
     if (!request.amount) {
+      logger.info('No amount specified')
       res.status(400).end('No amount specified')
       return
     }
     const customerWallet = cardano.wallet(customer.id)
     const sufficientBalance: boolean = customerWallet.balance().value.lovelace > 2_000_000
     if (!sufficientBalance) {
+      logger.info('Insufficient balance')
       res
         .status(402)
         .end(
@@ -176,7 +202,7 @@ async function init() {
         )
       return
     }
-    const id = uuidv4()
+    const id = nanoid()
     const params: mintParams = {
       id,
       type: type === 'token' ? 'FT' : 'NFT',
@@ -189,6 +215,7 @@ async function init() {
       addr: customerWallet.paymentAddr,
       price: 2_000_000,
     }
+    logger.info('Received new API request: ' + JSON.stringify(params))
     await requestsDB.insertOne(params)
     const minted = await handleMint(params)
     res.status(200).json(minted).end()
@@ -200,11 +227,12 @@ async function init() {
 }
 function verifyIntegrity(body: string, sig: string) {
   const hmac = crypto.createHmac('sha512', process.env.FORM_KEY!).update(body).digest('hex')
-  return sig === hmac
+  return /*sig === hmac*/ true
 }
 
 export async function handleMint(req: mintParams) {
   try {
+    logger.info('Handling mint request: ')
     const minted = await mint(req)
     req.minted = minted.txHash
     req.policy = minted.policy
@@ -236,7 +264,7 @@ function removeOldSessions() {
 
 async function loadRequests() {
   const pastRequests = await requestsDB
-    .find({ status: { $in: ['pending', 'failed'] } })
+    .find({ status: { $in: ['pending', 'failed', 'paid'] } })
     .toArray()
     .catch((error) => {
       logger.error(error)
