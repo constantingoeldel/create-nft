@@ -58,6 +58,7 @@ export async function checkUTXOs() {
       })
     }
   })
+  setInterval(() => checkUTXOs(), 10000)
 }
 
 function checkPayment(payment: receivedPayment, openRequests: mintParams[]) {
@@ -75,5 +76,3 @@ function checkPayment(payment: receivedPayment, openRequests: mintParams[]) {
     }
   }
 }
-
-setInterval(() => checkUTXOs(), 10000)

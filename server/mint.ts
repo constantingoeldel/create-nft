@@ -17,6 +17,10 @@ export async function mint({ type, properties, file, amount, addr }: mintParams)
     type: 'mint',
     media: !!file,
   })
+  if (!addr) {
+    logger.error('No receiving address provided')
+    throw new Error('Missing addr')
+  }
   const tip: number = cardano.queryTip().slot
 
   const assetName = properties.name
@@ -51,7 +55,7 @@ export async function mint({ type, properties, file, amount, addr }: mintParams)
   const raw = createTransaction(tx)
   const signed = signTransaction(wallet, raw)
   logger.info({ message: 'Transaction ready to be submitted', raw: raw, signed: signed })
-  const txHash = cardano.transactionSubmit(signed)
+  const txHash: string = cardano.transactionSubmit(signed)
   txHash &&
     logger.info({
       message: 'Minting successful, transaction hash: ' + txHash,

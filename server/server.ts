@@ -12,11 +12,14 @@ import logger from './logging.js'
 import { customers, mints, requests as requestsDB } from './db.js'
 import { checkUTXOs } from './utxos.js'
 import { nanoid } from 'nanoid'
+import startChain from './chain.js'
 config()
 
 const devMode = process.env.DEV || false
 const shelleyGenesisPath = process.env.GENESIS_PATH!
 const port = devMode ? process.env.PORT_TEST! : process.env.PORT!
+const bearer = process.env.BEARER_TOKEN!
+let chain = Number(process.env.CHAIN!)
 
 export const cardano = devMode
   ? new CardanoCliJs({ shelleyGenesisPath, network: 'testnet-magic 1097911063' })
@@ -26,12 +29,12 @@ export const wallet = devMode ? cardano.wallet('Testnet') : cardano.wallet('Cons
 
 export let requests: mintParams[] = []
 let sessions: { id: string; price: number; timestamp: number }[] = []
-
 try {
+  chain = chain && (await startChain({ log: false }))
   init()
 } catch (error) {
   logger.error(error)
-  init()
+  process.kill(chain)
 }
 
 async function init() {
@@ -53,22 +56,24 @@ async function init() {
 
   server.post('/form', async (req, res) => {
     // @ts-ignore
-    const params: mintParams = req.fields
+    const { type, properties, amount } = req.fields
     const files = req.files
+    const auth = req.headers?.authorization?.split(' ')[1]
     // @ts-ignore
     const file = Array.isArray(files) ? files.files[0] : files.file
     const { checksum } = req.headers
-    if (typeof checksum !== 'string') {
+    console.log(auth, checksum)
+    if (!auth || typeof checksum !== 'string') {
       logger.http('No auth header. Aborting.')
       res.status(418).end('No auth header.')
       return
     }
-    if (!params || !params.id) {
+    if (!properties) {
       logger.http('No content. Aborting.')
       res.status(418).end('No content.')
       return
     }
-    const trust = devMode || verifyIntegrity(JSON.stringify(params), checksum)
+    const trust = auth === bearer || verifyIntegrity(JSON.stringify(properties), checksum)
     if (!trust) {
       logger.http('Checksum did not match. Aborting.')
       res.status(401).end('Source not authenticated.')
@@ -79,43 +84,41 @@ async function init() {
       res.status(402).end('File too large.')
       return
     }
-    if (!sessions.find((s) => s.id === params.id)) {
-      console.log(params.id, params.price)
-      logger.http('Session does not exist. Aborting.')
-      res.status(403).end('Session does not exist or is expired.')
-      return
+    const rawProps = JSON.parse(typeof properties === 'string' ? properties : properties[0])
+    if (type !== 'NFT' || type !== 'FT')
+      if (!rawProps.name || Object.keys(rawProps).length > 10) {
+        logger.http('No name or too many properties. Aborting.')
+        res.status(400).end('No name or too many properties.')
+      }
+    logger.info('Trusted request received.')
+    const session = newSession()
+    const request: mintParams = {
+      properties,
+      type,
+      ...session,
+      status: 'pending',
+      amount: Number(amount) || 1,
     }
-    if (requests.find((request) => request.id === params.id || request.price === params.price)) {
-      logger.http('Request already exists. Aborting.')
-      res.status(418).end('Request already exists.')
-      return
-    }
-    logger.info('Trusted request received. ID: ', params.id)
 
     if (file) {
-      renameSync('./' + file.path, './tmp/' + params.id + '_' + file.name)
-      params.file = './tmp/' + params.id + '_' + file.name
-      logger.info('Uploaded file: ' + params.file)
+      renameSync('./' + file.path, './tmp/' + session.id + '_' + file.name)
+      request.file = './tmp/' + session.id + '_' + file.name
+      logger.info('Uploaded file: ' + file)
     }
-    res.status(200).end('Submission successful. Checking for payment.')
-    params.price = Math.round(params.price * 1_000_000)
-    params.amount = Number(params.amount)
-    // @ts-ignore
-    params.properties = JSON.parse(params.properties)
-    const request: mintParams = { ...params, status: 'pending', timestamp: Date.now() }
     requests.push(request)
     const inserted = await requestsDB.insertOne(request)
     logger.info('Added request with id: ' + inserted.insertedId + ' to MongoDB')
+    res.status(200).json(session)
   })
 
-  server.get('/new', (_, res) => {
+  function newSession(): { id: string; price: number; timestamp: number } {
     const id = nanoid()
     const price = Math.round(25000 + Math.random() * 10000) / 10000
     const timestamp = new Date().getTime()
     sessions.push({ id, price, timestamp })
     removeOldSessions()
-    res.status(200).json({ id, price, timestamp }).end()
-  })
+    return { id, price, timestamp }
+  }
 
   server.get('/status/:id', (req, res) => {
     const id = req.params.id
@@ -138,6 +141,10 @@ async function init() {
         uploaded: !!request.file,
         minted: request.minted,
         policy: request.policy,
+        error:
+          request.status === 'failed'
+            ? false
+            : 'Something went wrong on our end. We are investigating the error and will pay back your ADA. You can contact me via <a>tel:+4915202510229</a>',
       })
       .end()
   })
@@ -152,7 +159,6 @@ async function init() {
   server.get('/v0/new', (_, res) => {
     const id = nanoid()
     const wallet = cardano.addressKeyGen(id)
-    console.log(wallet)
     cardano.addressBuild(id, { paymentVkey: wallet.vkey })
     const paymentAddr: string = cardano.wallet(id).paymentAddr
     const token = nanoid()
@@ -227,7 +233,7 @@ async function init() {
 }
 function verifyIntegrity(body: string, sig: string) {
   const hmac = crypto.createHmac('sha512', process.env.FORM_KEY!).update(body).digest('hex')
-  return /*sig === hmac*/ true
+  return sig === hmac
 }
 
 export async function handleMint(req: mintParams) {
@@ -238,13 +244,18 @@ export async function handleMint(req: mintParams) {
     req.policy = minted.policy
     updateStatus(req.id, 'minted')
     devMode || sendMail(`Minting of ${req.type} with ID ${req.id} successful!`)
-    mints.insertOne({ ...minted.tx, _id: minted.txHash, policy: minted.policy })
+    mints.insertOne({ ...minted.tx, hash: minted.txHash, policy: minted.policy, id: req.id })
     return req
   } catch (error) {
     logger.error(error)
     updateStatus(req.id, 'failed')
     devMode || sendMail(`There was an error while minting request ${req.id}:  ${error}`)
-    return { error: 'There was an error when minting: ' + error }
+    return {
+      error:
+        'There was an error when minting: ' +
+        error +
+        '<br> We are investigating the error and will pay back your ADA. You can contact us via +4915202510229',
+    }
   }
 }
 

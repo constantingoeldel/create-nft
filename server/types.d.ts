@@ -49,37 +49,21 @@ declare interface Wallet {
     value: { [unit: string]: number }
   }
 }
-declare type mintParams =
-  | {
-      timestamp: number
-      id: string
-      type: 'NFT'
-      amount: number
-      properties: properties
-      addr: string
-      price: number
-      paid: boolean
-      minted: false | string
-      policy?: string
-      file?: string
+declare interface mintParams {
+  type: 'NFT' | 'FT'
+  timestamp: number
+  id: string
+  amount: number
+  properties: properties
+  addr?: string
+  price: number
+  paid?: boolean
+  minted?: false | string
+  policy?: string
+  file?: string
 
-      status: 'pending' | 'paid' | 'minted' | 'failed'
-    }
-  | {
-      timestamp: number
-      id: string
-      type: 'FT'
-      properties: properties
-      amount: number
-      addr: string
-      price: number
-      paid: boolean
-      minted: false | string
-      policy?: string
-      file?: string
-
-      status: 'pending' | 'paid' | 'minted' | 'failed'
-    }
+  status: 'pending' | 'paid' | 'minted' | 'failed'
+}
 
 declare interface request {
   auth: string

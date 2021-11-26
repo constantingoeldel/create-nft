@@ -5,7 +5,5 @@ Backend in /server, shoutout to cardanoCLIJS, but your documentation is shit. Go
 ## TODO
 
 - Custom fields
-- API
-- Errors to client
 - ipfs
 - keyencryption

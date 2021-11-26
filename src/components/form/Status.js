@@ -9,6 +9,7 @@ export default function Status({ step, type, setStep, id, newToken }) {
     minted: false,
     uploaded: false,
     policy: '',
+    error: false,
   })
   const statusOptions = {
     method: 'GET',
@@ -17,13 +18,14 @@ export default function Status({ step, type, setStep, id, newToken }) {
   useEffect(() => {
     const interval = setInterval(() => {
       fetch(GATSBY_SERVER_URL + '/status/' + id, statusOptions)
-        .then((response) => response.text())
-        .then((result) => setStatus(JSON.parse(result)))
+        .then((response) => response.json())
+        .then((result) => setStatus(result))
         .catch((error) => console.log('error', error))
     }, 1000)
     return () => clearInterval(interval)
   }, [step])
 
+  status.error && alert(error)
   return (
     <div className="mt-10 sm:mt-0">
       <div className="md:grid md:grid-cols-3 md:gap-6">

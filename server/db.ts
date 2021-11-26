@@ -4,7 +4,7 @@ const mongodb = new MongoClient(process.env.MONGODB_URI!)
 await mongodb.connect()
 const db = mongodb.db()
 const requests = db.collection<mintParams>('requests')
-const mints = db.collection<Tx & { policy: string }>('mints')
+const mints = db.collection<Tx & { hash: string; id: string; policy: string }>('mints')
 const payments = db.collection<receivedPayment>('payments')
 const customers = db.collection<customer>('customers')
 

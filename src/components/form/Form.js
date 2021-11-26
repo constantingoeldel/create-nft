@@ -8,21 +8,12 @@ import Status from './Status'
 // Validation
 export default function Form({ input, setInput }) {
   const { GATSBY_SERVER_URL } = process.env
-  const [step, setStep] = useState(0)
+  const [step, setStep] = useState('calculating...')
   const [type, setType] = useState('NFT')
   const [file, setFile] = useState()
   const [price, setPrice] = useState(1)
   const [id, setId] = useState('fetcherror')
 
-  function newToken() {
-    fetch(GATSBY_SERVER_URL + '/new')
-      .then((res) => res.json())
-      .then((res) => {
-        setPrice(res.price)
-        setId(res.id)
-      })
-      .catch((err) => alert(err))
-  }
   useEffect(() => {
     fetch(GATSBY_SERVER_URL + '/status/server')
       .then((res) => {
@@ -49,7 +40,6 @@ export default function Form({ input, setInput }) {
     crypt.setHMACKey('735a1f6c-7921-410c-a954-dce57483f195', 'TEXT')
     crypt.update(content)
     const hmac = crypt.getHMAC('HEX')
-    console.log(hmac, content)
     const headers = new Headers()
     headers.append('checksum', hmac)
 
@@ -69,8 +59,11 @@ export default function Form({ input, setInput }) {
     }
 
     fetch(GATSBY_SERVER_URL + '/form', options)
-      .then((response) => response.text())
-      .then((result) => console.log(result))
+      .then((response) => response.json())
+      .then((result) => {
+        setId(result.id)
+        setPrice(result.price)
+      })
       .catch((error) => console.log('error', error))
   }
   const steps = {
