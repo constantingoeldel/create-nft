@@ -8,10 +8,10 @@ import Status from './Status'
 // Validation
 export default function Form({ input, setInput }) {
   const { GATSBY_SERVER_URL } = process.env
-  const [step, setStep] = useState('calculating...')
+  const [step, setStep] = useState(0)
   const [type, setType] = useState('NFT')
   const [file, setFile] = useState()
-  const [price, setPrice] = useState(1)
+  const [price, setPrice] = useState('calculating...')
   const [id, setId] = useState('fetcherror')
 
   useEffect(() => {
