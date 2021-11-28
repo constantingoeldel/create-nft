@@ -1,0 +1,4 @@
+yarn run v1.22.17
+$ tsc && node ./build/server.js
+{"level":"info","message":"Loaded 3 past requests","service":"API"}
+info Visit https://yarnpkg.com/en/docs/cli/run for documentation about this command.

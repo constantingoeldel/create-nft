@@ -1,3 +1,4 @@
+
 import { exec } from 'child_process'
 import logger from './logging.js'
 
@@ -43,7 +44,7 @@ function isChainRunning(): Promise<number> {
   return new Promise<number>((resolve, reject) => {
     exec('ps -ax | grep cardano-node', (err, stdout: string) => {
       if (err) reject(err.toString())
-      const pid = stdout.includes('run') ? Number(stdout.split(' ')[2]) : 0
+      const pid = stdout.includes('run') ? Number(stdout.split(' ').find(i => Number(i))) : 0
       return resolve(pid)
     })
   })
