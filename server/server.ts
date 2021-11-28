@@ -19,7 +19,6 @@ const devMode = process.env.DEV || false
 const shelleyGenesisPath = process.env.GENESIS_PATH!
 const port = devMode ? process.env.PORT_TEST! : process.env.PORT!
 const bearer = process.env.BEARER_TOKEN!
-let chain = 0
 
 export const cardano = devMode
   ? new CardanoCliJs({ shelleyGenesisPath, network: 'testnet-magic 1097911063' })
@@ -61,8 +60,7 @@ async function init() {
     // @ts-ignore
     const file = Array.isArray(files) ? files.files[0] : files.file
     const { checksum } = req.headers
-    console.log(auth, checksum)
-    if (!auth || typeof checksum !== 'string') {
+    if (typeof checksum !== 'string') {
       logger.http('No auth header. Aborting.')
       res.status(418).end('No auth header.')
       return
@@ -72,7 +70,7 @@ async function init() {
       res.status(418).end('No content.')
       return
     }
-    const trust = auth === bearer || verifyIntegrity(JSON.stringify(properties), checksum)
+    const trust = auth === bearer || verifyIntegrity(properties, checksum)
     if (!trust) {
       logger.http('Checksum did not match. Aborting.')
       res.status(401).end('Source not authenticated.')
@@ -181,7 +179,6 @@ async function init() {
       res.status(401).end('Not authenticated')
       return
     }
-    console.log(req.params.type)
     const correctType = req.params.type === 'nft' || req.params.type === 'native'
     if (!correctType) {
       logger.info('Invalid type')

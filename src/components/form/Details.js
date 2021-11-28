@@ -1,17 +1,7 @@
 import React, { useEffect } from 'react'
 
-export default function Details({
-  setStep,
-  setInput,
-  input,
-  type,
-  setFile,
-  file,
-  submitForm,
-  newToken,
-}) {
+export default function Details({ setStep, setInput, input, type, setFile, file, submitForm }) {
   const fileURL = file ? URL.createObjectURL(file) : ''
-  useEffect(() => newToken(), [])
 
   return (
     <div className="mt-10 sm:mt-0">

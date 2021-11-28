@@ -23,22 +23,16 @@ export default function Form({ input, setInput }) {
   }, [])
 
   function submitForm() {
-    const properties = {
+    const properties = JSON.stringify({
       name: input.name,
       author: input.author,
       description: input.description,
       symbol: input.symbol,
-    }
-    const content = JSON.stringify({
-      id,
-      type,
-      price: String(price),
-      properties: properties,
-      amount: String(input.amount),
     })
+
     const crypt = new jsSHA('SHA-512', 'TEXT')
     crypt.setHMACKey('735a1f6c-7921-410c-a954-dce57483f195', 'TEXT')
-    crypt.update(content)
+    crypt.update(properties)
     const hmac = crypt.getHMAC('HEX')
     const headers = new Headers()
     headers.append('checksum', hmac)
@@ -48,7 +42,7 @@ export default function Form({ input, setInput }) {
     body.append('id', id)
     body.append('type', type)
     body.append('price', price)
-    body.append('properties', JSON.stringify(properties))
+    body.append('properties', properties)
     body.append('amount', input.amount)
 
     const options = {
@@ -77,13 +71,10 @@ export default function Form({ input, setInput }) {
         type={type}
         setStep={setStep}
         submitForm={submitForm}
-        newToken={newToken}
       />
     ),
     [2]: () => <Payment setStep={setStep} type={type} price={price} />,
-    [3]: () => (
-      <Status step={step} id={id} setStep={setStep} type={type} newToken={() => newToken} />
-    ),
+    [3]: () => <Status step={step} id={id} setStep={setStep} type={type} />,
   }
   return (
     <section className="mt-10">
