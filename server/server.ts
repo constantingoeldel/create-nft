@@ -19,7 +19,7 @@ const devMode = process.env.DEV || false
 const shelleyGenesisPath = process.env.GENESIS_PATH!
 const port = devMode ? process.env.PORT_TEST! : process.env.PORT!
 const bearer = process.env.BEARER_TOKEN!
-let chain = Number(process.env.CHAIN!)
+let chain = 0
 
 export const cardano = devMode
   ? new CardanoCliJs({ shelleyGenesisPath, network: 'testnet-magic 1097911063' })
@@ -30,11 +30,10 @@ export const wallet = devMode ? cardano.wallet('Testnet') : cardano.wallet('Cons
 export let requests: mintParams[] = []
 let sessions: { id: string; price: number; timestamp: number }[] = []
 try {
-  chain = chain && (await startChain({ log: false }))
+  await startChain({ log: false })
   init()
 } catch (error) {
   logger.error(error)
-  process.kill(chain)
 }
 
 async function init() {

@@ -8,9 +8,6 @@ const logOptions = {
   transports: [
     new winston.transports.Console(),
     new winston.transports.File({ filename: 'combined.log' }),
-    new LokiTransport({
-      host: process.env.GRAPHANA!,
-    }),
   ],
 }
 const logger = winston.createLogger(logOptions)
