@@ -2,30 +2,18 @@ import { BlockFrostAPI } from '@blockfrost/blockfrost-js'
 import CardanoCliJs from 'cardanocli-js'
 import { config } from 'dotenv'
 config()
-const shelleyGenesisPath = process.env.GENESIS_PATH || ''
-const cardano = new CardanoCliJs({ shelleyGenesisPath })
+console.log(process.env.CARDANO_NODE_SOCKET_PATH)
 
-const blockfrost = new BlockFrostAPI({
-  projectId: process.env.BLOCKFROST_API_KEY_MAINNET,
-})
+export const devMode = true
+export const bearer = process.env.BEARER_TOKEN
+const shelleyGenesisPath = process.env.GENESIS_PATH
+const port = devMode ? process.env.PORT_TEST : process.env.PORT
 
-const wallet = cardano.wallet('Constantin')
+export const cardano = devMode
+  ? new CardanoCliJs({ shelleyGenesisPath, network: 'testnet-magic 1097911063' })
+  : new CardanoCliJs({ shelleyGenesisPath })
 
-async function payerAddr(txHash) {
-  let info = {
-    received: 0,
-    payer: '',
-  }
-  const tx = await blockfrost.txsUtxos(txHash)
-  console.log(tx)
-  tx.outputs.forEach((output) => {
-    output.address === wallet.paymentAddr &&
-      (info.received = output.amount.find((a) => a.unit === 'lovelace').quantity) &&
-      (info.payer = tx.inputs[0].address)
-  })
-  return info
-}
+export const wallet = devMode ? cardano.wallet('TestnetReceiver') : cardano.wallet('Constantin')
 
-const res = await payerAddr('debd74a519c4f672558b3ee768e55d0d7459375c055968f1e5502a98041ddc7d')
-
-console.log(res)
+console.table(wallet.balance().utxo)
+console.log(wallet.balance().utxo[0])

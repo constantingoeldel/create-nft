@@ -12,6 +12,9 @@ import Header from '../components/layout/Header'
 import SEO from '../components/SEO'
 import Form from '../components/form/Form'
 import { useState } from 'react'
+import { CopyBlock, atomOneDark } from 'react-code-blocks'
+import send from '../svg/send.png'
+import AnchorLink from 'react-anchor-link-smooth-scroll'
 
 const Index = () => {
   const [input, setInput] = useState({
@@ -33,11 +36,12 @@ const Index = () => {
             <h1 className="text-2xl sm:text-4xl lg:text-5xl xl:text-6xl font-bold leading-none">
               The easiest way to create your own NFTs on Cardano
             </h1>
-            <p className="text-l sm:text-xl lg:text-2xl mt-6 font-light">
+            <p className="text-l sm:text-xl lg:text-2xl mt-6 font-light" id="create">
               It will take just 5 minutes, no prior knowledge required. Payment via ADA or credit
               card.
             </p>
           </div>
+
           <Form input={input} setInput={setInput} />
         </div>
         <div className="container mx-auto px-8 lg:flex relative z-0 "></div>
@@ -76,7 +80,70 @@ const Index = () => {
           </div>
         </div>
       </section>
-      <div className="container mx-auto text-center">
+      <div className="container mx-auto text-center mb-5">
+        <h2 className="text-3xl lg:text-5xl font-semibold">API</h2>
+      </div>
+      <div className="container mx-auto  mb-5">
+        <p className="text-l sm:text-xl lg:text-2xl mt-6">
+          You can also use our API, it is currently completely free to use, only transaction costs
+          added:
+        </p>
+        <ul className="list-decimal pl-6">
+          <li>Create a new wallet and token</li>
+          <li>Send some ADA to the wallet </li>
+          <li>Mint a token or NFT exactly how you want it</li>
+        </ul>
+      </div>
+      <section className="container mx-auto">
+        <p className="text-l sm:text-xl lg:text-2xl my-3">Create token </p>
+        <CopyBlock
+          language="js"
+          theme={atomOneDark}
+          text={`fetch("https://api.cardano-nft.de/v0/new")
+          .then(response => response.text())
+          .then(result => console.log(result))
+          .catch(error => console.log('error', error)); 
+
+// Return value
+  {
+    "paymentAddr": "addr1v9ptstftfxz2hnkffwldl04tju7y0uyq2ucyqqzphu65hqqjjravl",
+    "token": "ZgdFvtV87qGD1UDwIjart"
+  } `}
+        />{' '}
+      </section>
+      <section className="container mx-auto">
+        <p className="text-l sm:text-xl lg:text-2xl my-3">Send some ADA to your new wallet </p>
+        <img src={send} alt="Transfer ADA to the wallet" />
+      </section>
+      <section className="container mx-auto">
+        <p className="text-l sm:text-xl lg:text-2xl my-3">Mint your NFT </p>
+        <CopyBlock
+          language="js"
+          theme={atomOneDark}
+          text={`const raw = JSON.stringify({
+  "auth": "TOKEN",
+  "amount": 20 // Not necessary for NFTs 
+  "properties": {
+    "name": "NAME",
+    "x": "up to ten other properties as strings",
+    "y": "like this, you choose the property name"
+  }
+});
+
+const requestOptions = {
+  method: 'POST',
+  headers: headers,
+  body: raw,
+  redirect: 'follow'
+};
+
+fetch("https://api.cardano-nft.de/v0/create/nft", requestOptions) // Or /token for fungible tokens
+  .then(response => response.text())
+  .then(result => console.log(result))
+  .catch(error => console.log('error', error));`}
+        />{' '}
+      </section>
+      <div className="container mx-auto text-center mt-5">
         <h2 className="text-3xl lg:text-5xl font-semibold">How it works</h2>
       </div>
 
@@ -120,6 +187,7 @@ const Index = () => {
         }
         secondarySlot={<SvgCharts />}
       />
+
       {/* <section id="stats" className="py-20 lg:pt-32">
       <div className="container mx-auto text-center">
         <LabelText className="text-gray-600">Our customers get results</LabelText>
@@ -148,12 +216,15 @@ const Index = () => {
         </div>
       </div>
     </section> */}
+
       <section className="container mx-auto my-20 py-24 bg-gray-200 rounded-lg text-center">
         <h3 className="text-5xl font-semibold">Ready to create your NFT?</h3>
         <p className="mt-8 text-xl font-light">
           Everything until the final confirmation is easily reversible, no hidden costs.
         </p>
-        <Button className="mt-8">Start creating</Button>
+        <AnchorLink href="#create">
+          <Button className="mt-8">Start creating</Button>
+        </AnchorLink>
       </section>
     </>
   )

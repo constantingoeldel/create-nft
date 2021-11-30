@@ -53,9 +53,10 @@ declare interface mintParams {
   type: 'NFT' | 'FT'
   timestamp: number
   id: string
+  walletId: string
   amount: number
   properties: properties
-  addr?: string
+  addr: string
   price: number
   paid?: boolean
   minted?: false | string

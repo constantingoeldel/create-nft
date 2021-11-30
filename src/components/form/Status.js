@@ -25,7 +25,7 @@ export default function Status({ step, type, setStep, id }) {
     return () => clearInterval(interval)
   }, [step])
 
-  status.error && alert(error)
+  status.error && alert(status.error)
   return (
     <div className="mt-10 sm:mt-0">
       <div className="md:grid md:grid-cols-3 md:gap-6">

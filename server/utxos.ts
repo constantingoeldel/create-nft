@@ -1,6 +1,6 @@
-import { cardano, wallet, handleMint, requests, updateStatus } from './server.js'
+import { cardano, wallet, handleMint, requests } from './server.js'
 import logger from './logging.js'
-import { payments } from './db.js'
+import { payments, updateStatus } from './db.js'
 import { BlockFrostAPI } from '@blockfrost/blockfrost-js'
 
 const devMode = !!process.env.DEV || false
@@ -45,9 +45,7 @@ export async function checkUTXOs() {
       payments.insertOne(newPayment)
       checkPayment(
         newPayment,
-        requests.filter(
-          (r) => r.status === 'pending' || r.status === 'failed' || r.status === 'paid'
-        )
+        requests.filter((r) => r.status !== 'minted')
       )
     } catch (error) {
       logger.log({
@@ -63,7 +61,7 @@ export async function checkUTXOs() {
 
 function checkPayment(payment: receivedPayment, openRequests: mintParams[]) {
   for (const [i, req] of openRequests.entries()) {
-    if (req.price === payment.amount) {
+    if (payment.amount === req.price || payment.amount === req.price * 1_000_000) {
       logger.info({
         message: 'Found match for incoming payment, starting minting process',
         type: 'match',

@@ -23,7 +23,7 @@ export default function Type({ setStep, setType, type }) {
                       Token type
                     </label>
                     <p className="my-2 text-xs text-gray-600">
-                      Choose between a unique NFT or an interchangable custom token
+                      Choose between a unique NFT or an interchangeable custom token
                     </p>
                     <select
                       onChange={(event) => setType(event.target.value)}

@@ -1,27 +1,19 @@
 import { config } from 'dotenv'
 import uploadIpfs from './ipfs.js'
-import { cardano, wallet } from './server.js'
+import { cardano } from './server.js'
 import logger from './logging.js'
 
 config()
 
-const mintDeduction = 1_500_000
+const mintDeduction = 2_000_000
 const keyHash: string = process.env.POLICY_KEY || ''
 const receivingAddr: string = process.env.DEV!
   ? process.env.TESTNET_ADDR!
   : process.env.STANDARD_ADDR!
 
-export async function mint({ type, properties, file, amount, addr }: mintParams) {
-  logger.info({
-    message: `Starting to mint ${amount} ${type} named ${properties.name}`,
-    type: 'mint',
-    media: !!file,
-  })
-  if (!addr) {
-    logger.error('No receiving address provided')
-    throw new Error('Missing addr')
-  }
+export async function mint({ walletId, type, properties, file, amount, addr, price }: mintParams) {
   const tip: number = cardano.queryTip().slot
+  const wallet = cardano.wallet(walletId)
 
   const assetName = properties.name
     .normalize('NFD')
@@ -36,12 +28,16 @@ export async function mint({ type, properties, file, amount, addr }: mintParams)
     ...properties,
   })
   const tx = {
-    txIn: wallet.balance().utxo,
+    txIn:
+      walletId.length === 21
+        ? wallet.balance().utxo
+        : wallet
+            .balance()
+            .utxo.filter((utxo: { value: { lovelace: number } }) => utxo.value.lovelace === price),
     txOut: [
       {
-        address: receivingAddr,
+        address: walletId.length === 21 ? wallet.paymentAddr : receivingAddr,
         value: {
-          ...wallet.balance().value,
           lovelace: wallet.balance().value.lovelace - mintDeduction,
         },
       },
@@ -69,8 +65,8 @@ function createTransaction(tx: Tx): Tx {
   const rawTx = cardano.transactionBuildRaw(tx)
   const fee = cardano.transactionCalculateMinFee({ ...tx, txBody: rawTx })
   logger.info('Transaction cost: ' + fee)
+  // @ts-ignore
   tx.txOut[0].value.lovelace -= fee
-  logger.info(tx)
   return cardano.transactionBuildRaw({ ...tx, fee })
 }
 

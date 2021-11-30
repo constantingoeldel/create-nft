@@ -1,24 +1,27 @@
-import { renameSync } from 'fs'
 import express from 'express'
 import formidable from 'express-formidable'
 import cors from 'cors'
 import { config } from 'dotenv'
-import crypto from 'crypto'
 import { mint } from './mint.js'
 import CardanoCliJs from 'cardanocli-js'
 import helmet from 'helmet'
 import sendMail from './mail.js'
 import logger from './logging.js'
-import { customers, mints, requests as requestsDB } from './db.js'
+import { updateStatus, mints, requests as requestsDB } from './db.js'
 import { checkUTXOs } from './utxos.js'
-import { nanoid } from 'nanoid'
 import startChain from './chain.js'
+import form from './routes/form.js'
+import status from './routes/status.js'
+import create from './routes/create.js'
+import newCustomer from './routes/newCustomer.js'
+import { api, root } from './routes/root.js'
+import balance from './routes/balance.js'
 config()
 
-const devMode = process.env.DEV || false
+export const devMode = process.env.DEV || false
+export const bearer = process.env.BEARER_TOKEN!
 const shelleyGenesisPath = process.env.GENESIS_PATH!
 const port = devMode ? process.env.PORT_TEST! : process.env.PORT!
-const bearer = process.env.BEARER_TOKEN!
 
 export const cardano = devMode
   ? new CardanoCliJs({ shelleyGenesisPath, network: 'testnet-magic 1097911063' })
@@ -27,211 +30,39 @@ export const cardano = devMode
 export const wallet = devMode ? cardano.wallet('Testnet') : cardano.wallet('Constantin')
 
 export let requests: mintParams[] = []
-let sessions: { id: string; price: number; timestamp: number }[] = []
-try {
-  await startChain({ log: false })
-  init()
-} catch (error) {
-  logger.error(error)
+
+export const start = () => {
+  try {
+    server()
+  } catch (error) {
+    logger.error(error)
+    server()
+  }
 }
 
-async function init() {
+export async function server() {
+  await startChain({ log: false })
   requests = await loadRequests()
   await checkUTXOs()
+
   const server = express()
   server.use(helmet())
   server.use(cors())
   server.use(formidable({ uploadDir: './tmp' }))
 
-  server.get('/', (_, res) => {
-    res
-      .send(
-        '<p>This is the API connected to <a href="https://cardano-nft.de">https://cardano-nft.de</a>.</p>'
-      )
-      .status(200)
-      .end()
-  })
+  server.get('/', root)
+  server.get('/status/:id', status)
+  server.post('/form', form)
 
-  server.post('/form', async (req, res) => {
-    // @ts-ignore
-    const { type, properties, amount } = req.fields
-    const files = req.files
-    const auth = req.headers?.authorization?.split(' ')[1]
-    // @ts-ignore
-    const file = Array.isArray(files) ? files.files[0] : files.file
-    const { checksum } = req.headers
-    if (typeof checksum !== 'string') {
-      logger.http('No auth header. Aborting.')
-      res.status(418).end('No auth header.')
-      return
-    }
-    if (!properties) {
-      logger.http('No content. Aborting.')
-      res.status(418).end('No content.')
-      return
-    }
-    const trust = auth === bearer || verifyIntegrity(properties, checksum)
-    if (!trust) {
-      logger.http('Checksum did not match. Aborting.')
-      res.status(401).end('Source not authenticated.')
-      return
-    }
-    if (file && file.size > 15 * 1024 * 1024) {
-      logger.http('File too large. Aborting.')
-      res.status(402).end('File too large.')
-      return
-    }
-    const rawProps = JSON.parse(typeof properties === 'string' ? properties : properties[0])
-    if (type !== 'NFT' || type !== 'FT')
-      if (!rawProps.name || Object.keys(rawProps).length > 10) {
-        logger.http('No name or too many properties. Aborting.')
-        res.status(400).end('No name or too many properties.')
-      }
-    logger.info('Trusted request received.')
-    const session = newSession()
-    const request: mintParams = {
-      properties,
-      type,
-      ...session,
-      status: 'pending',
-      amount: Number(amount) || 1,
-    }
-
-    if (file) {
-      renameSync('./' + file.path, './tmp/' + session.id + '_' + file.name)
-      request.file = './tmp/' + session.id + '_' + file.name
-      logger.info('Uploaded file: ' + file)
-    }
-    requests.push(request)
-    const inserted = await requestsDB.insertOne(request)
-    logger.info('Added request with id: ' + inserted.insertedId + ' to MongoDB')
-    res.status(200).json(session)
-  })
-
-  function newSession(): { id: string; price: number; timestamp: number } {
-    const id = nanoid()
-    const price = Math.round(25000 + Math.random() * 10000) / 10000
-    const timestamp = new Date().getTime()
-    sessions.push({ id, price, timestamp })
-    removeOldSessions()
-    return { id, price, timestamp }
-  }
-
-  server.get('/status/:id', (req, res) => {
-    const id = req.params.id
-    if (id === 'server') {
-      res.status(200).end('All systems nominal')
-      return
-    }
-    const request = requests.find((request) => request.id === id)
-
-    if (!request) {
-      res.status(404).end('Request with ID ' + id + ' not found')
-      return
-    }
-    res
-      .status(200)
-      .json({
-        id: id,
-        received: true,
-        paid: request.paid,
-        uploaded: !!request.file,
-        minted: request.minted,
-        policy: request.policy,
-        error:
-          request.status === 'failed'
-            ? false
-            : 'Something went wrong on our end. We are investigating the error and will pay back your ADA. You can contact me via <a>tel:+4915202510229</a>',
-      })
-      .end()
-  })
-
-  server.get('/v0/', (_, res) => {
-    res
-      .status(200)
-      .end(
-        'This is the programmatic API to create NFTs and Native Tokens on the Cardano blockchain. See the documentation here: https://cardano-nft.de/docs '
-      )
-  })
-  server.get('/v0/new', (_, res) => {
-    const id = nanoid()
-    const wallet = cardano.addressKeyGen(id)
-    cardano.addressBuild(id, { paymentVkey: wallet.vkey })
-    const paymentAddr: string = cardano.wallet(id).paymentAddr
-    const token = nanoid()
-    const createdAt = Date.now()
-
-    customers.insertOne({ id, paymentAddr, token, createdAt })
-    logger.log({ message: 'Created new customer: ' + id, level: 'info' })
-    res.status(200).json({ paymentAddr, token }).end()
-  })
-
-  server.post('/v0/create/:type', async (req, res) => {
-    // @ts-ignore
-    const request: request = req.fields
-    if (!request) {
-      res.status(400).end('No request provided')
-      return
-    }
-    const customer = await customers.findOne({ token: request.auth })
-    if (!customer) {
-      logger.info('Customer not found')
-      res.status(401).end('Not authenticated')
-      return
-    }
-    const correctType = req.params.type === 'nft' || req.params.type === 'native'
-    if (!correctType) {
-      logger.info('Invalid type')
-      res.status(400).end('Not a valid token type')
-      return
-    }
-    // @ts-ignore
-    const type: 'nft' | 'token' = req.params.type
-    request.amount = type === 'token' ? request.amount : 1
-    if (!request.amount) {
-      logger.info('No amount specified')
-      res.status(400).end('No amount specified')
-      return
-    }
-    const customerWallet = cardano.wallet(customer.id)
-    const sufficientBalance: boolean = customerWallet.balance().value.lovelace > 2_000_000
-    if (!sufficientBalance) {
-      logger.info('Insufficient balance')
-      res
-        .status(402)
-        .end(
-          'Wallet balance not sufficient, please top up this address: ' + customerWallet.paymentAddr
-        )
-      return
-    }
-    const id = nanoid()
-    const params: mintParams = {
-      id,
-      type: type === 'token' ? 'FT' : 'NFT',
-      amount: type === 'token' ? request.amount : 1,
-      timestamp: Date.now(),
-      properties: request.properties,
-      paid: true,
-      status: 'pending',
-      minted: false,
-      addr: customerWallet.paymentAddr,
-      price: 2_000_000,
-    }
-    logger.info('Received new API request: ' + JSON.stringify(params))
-    await requestsDB.insertOne(params)
-    const minted = await handleMint(params)
-    res.status(200).json(minted).end()
-  })
+  server.get('/v0/', api)
+  server.get('/v0/new', newCustomer)
+  server.get('/v0/balance/:token', balance)
+  server.post('/v0/create/:type', create)
 
   server.listen(port, () => {
     logger.info('Server running on port ' + port)
   })
 }
-function verifyIntegrity(body: string, sig: string) {
-  const hmac = crypto.createHmac('sha512', process.env.FORM_KEY!).update(body).digest('hex')
-  return sig === hmac
-}
-
 export async function handleMint(req: mintParams) {
   try {
     logger.info('Handling mint request: ')
@@ -241,6 +72,7 @@ export async function handleMint(req: mintParams) {
     updateStatus(req.id, 'minted')
     devMode || sendMail(`Minting of ${req.type} with ID ${req.id} successful!`)
     mints.insertOne({ ...minted.tx, hash: minted.txHash, policy: minted.policy, id: req.id })
+    requests.filter((req) => req.status !== 'minted')
     return req
   } catch (error) {
     logger.error(error)
@@ -253,20 +85,6 @@ export async function handleMint(req: mintParams) {
         '<br> We are investigating the error and will pay back your ADA. You can contact us via +4915202510229',
     }
   }
-}
-
-export function updateStatus(id: string, status: 'pending' | 'paid' | 'minted' | 'failed') {
-  requests = requests.map((request) => {
-    if (request.id == id) request.status = status
-    return request
-  })
-  requestsDB.updateOne({ id }, { $set: { status } })
-}
-
-function removeOldSessions() {
-  sessions = sessions.filter((session) => {
-    return new Date().getTime() - session.timestamp < 60 * 60
-  })
 }
 
 async function loadRequests() {

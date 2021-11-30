@@ -39,9 +39,7 @@ export default function Form({ input, setInput }) {
 
     const body = new FormData()
     file && body.append('file', file, file.name)
-    body.append('id', id)
     body.append('type', type)
-    body.append('price', price)
     body.append('properties', properties)
     body.append('amount', input.amount)
 
