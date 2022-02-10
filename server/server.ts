@@ -70,14 +70,15 @@ export async function handleMint(req: mintParams) {
     req.minted = minted.txHash
     req.policy = minted.policy
     updateStatus(req.id, 'minted')
-    devMode || sendMail(`Minting of ${req.type} with ID ${req.id} successful!`)
+    sendMail(`Minting of ${req.type} with ID ${req.id} successful!`)
     mints.insertOne({ ...minted.tx, hash: minted.txHash, policy: minted.policy, id: req.id })
     requests.filter((req) => req.status !== 'minted')
     return req
   } catch (error) {
+    console.log(error)
     logger.error(error)
     updateStatus(req.id, 'failed')
-    devMode || sendMail(`There was an error while minting request ${req.id}:  ${error}`)
+    sendMail(`There was an error while minting request ${req.id}:  ${error}`)
     return {
       error:
         'There was an error when minting: ' +

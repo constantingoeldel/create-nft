@@ -20,10 +20,10 @@ export default function startChain({
       isResponding = isChainResponding()
     }
     if (pid) {
-      console.log('Chain is already running')
+      logger.info('Chain is already running')
       return resolve(pid)
     }
-    console.log('Starting chain')
+    logger.info('Starting chain')
     const chain =
       exec(`cardano-node run --topology ${topology} --database-path ${db} --socket-path ${socket} --host-addr ${host} --port ${port} --config ${config}
     `)

@@ -1,25 +1,23 @@
-import { createTransport } from 'nodemailer'
+import sgMail from '@sendgrid/mail'
 import { config } from 'dotenv'
+import logger  from './logging.js'
 config()
-const transporter = createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.EMAIL_USERNAME,
-    pass: process.env.EMAIL_PASSWORD,
-  },
-})
+
+sgMail.setApiKey(process.env.SENDGRID!)
 
 export default function sendMail(text: string) {
-  if (!process.env.MAIL) return
-  const mailConfigurations = {
-    from: 'constantingoeldel@gmail.com',
-    to: 'constantin.goeldel@tum.de',
-    subject: 'Update from the NFT Server',
-    text: text,
+  const msg = {
+    to: 'constantingoeldel@gmail.com', 
+    from: 'server@cardano-nft.de', 
+    subject: "Update from server",
+    text: text || "Something happend on the server"
   }
-
-  transporter.sendMail(mailConfigurations, function (error, info) {
-    if (error) throw Error(String(error))
-    console.log('Email Sent Successfully')
-  })
+  process.env.MAIL  &&   sgMail
+    .send(msg)
+    .then(() => {
+      logger.info('Email sent')
+    })
+    .catch((error) => {
+      logger.error(error)
+    })
 }
