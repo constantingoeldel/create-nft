@@ -6,6 +6,12 @@ import { blockfrost} from './utxos.js'
 
 config()
 
+type Utxo = {
+  value: {
+    lovelace: number
+  }
+} 
+
 const mintDeduction = 2_000_000
 const keyHash: string = process.env.POLICY_KEY || ''
 const receivingAddr: string = process.env.DEV!
@@ -28,18 +34,17 @@ export async function mint({ walletId, type, properties, file, amount, addr, pri
     image: 'ipfs://' + artHash,
     ...properties,
   })
+  const paymentUTXO: Utxo  = wallet.balance().utxo.find((utxo: Utxo) => utxo.value.lovelace === price)
   const tx = {
     txIn:
       walletId.length === 21
         ? wallet.balance().utxo
-        : wallet
-            .balance()
-            .utxo.filter((utxo: { value: { lovelace: number } }) => utxo.value.lovelace === price),
+        : [paymentUTXO],
     txOut: [
       {
         address: walletId.length === 21 ? wallet.paymentAddr : receivingAddr,
         value: {
-          lovelace: wallet.balance().value.lovelace - mintDeduction,
+         lovelace: paymentUTXO.value.lovelace - mintDeduction,
         },
       },
       { address: addr, value: { lovelace: mintDeduction, [NFT]: amount } },
@@ -59,7 +64,7 @@ export async function mint({ walletId, type, properties, file, amount, addr, pri
   // const txHash: string = cardano.transactionSubmit(signed)
   txHash &&
     logger.info({
-      message: 'Minting successful, transaction hash: ' + txHash,
+      message: 'Minting successful',
       txHash: txHash,
       type: 'SUCCESS',
     })
@@ -70,8 +75,9 @@ function createTransaction(tx: Tx): Tx {
   const rawTx = cardano.transactionBuildRaw(tx)
   const fee = cardano.transactionCalculateMinFee({ ...tx, txBody: rawTx })
   logger.info('Transaction cost: ' + fee)
-  // @ts-ignore
   tx.txOut[0].value.lovelace -= fee
+  //@ts-ignore
+  const ada = {fee: fee, txIn: tx.txIn[0].value.lovelace , txOut: tx.txOut[0].value.lovelace}
   return cardano.transactionBuildRaw({ ...tx, fee })
 }
 
