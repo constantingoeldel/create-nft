@@ -2,6 +2,7 @@ import { config } from 'dotenv'
 import uploadIpfs from './ipfs.js'
 import { cardano } from './server.js'
 import logger from './logging.js'
+import { blockfrost} from './utxos.js'
 
 config()
 
@@ -51,7 +52,11 @@ export async function mint({ walletId, type, properties, file, amount, addr, pri
   const raw = createTransaction(tx)
   const signed = signTransaction(wallet, raw)
   logger.info({ message: 'Transaction ready to be submitted', raw: raw, signed: signed })
-  const txHash: string = cardano.transactionSubmit(signed)
+  const result = await blockfrost.txSubmit(signed)
+  console.log(result)
+  logger.info({ message: 'Transaction submitted', result })
+  const txHash = result
+  // const txHash: string = cardano.transactionSubmit(signed)
   txHash &&
     logger.info({
       message: 'Minting successful, transaction hash: ' + txHash,

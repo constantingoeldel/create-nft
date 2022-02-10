@@ -1,15 +1,15 @@
-import { cardano, wallet, handleMint, requests } from './server.js'
+import { wallet, handleMint, requests } from './server.js'
 import logger from './logging.js'
 import { payments, updateStatus } from './db.js'
 import { BlockFrostAPI } from '@blockfrost/blockfrost-js'
 
-const devMode = !!process.env.DEV || false
 
+const devMode = !!process.env.DEV || false
 const blockFrostApiKey = devMode
   ? process.env.BLOCKFROST_API_KEY_TESTNET!
   : process.env.BLOCKFROST_API_KEY_MAINNET!
 
-const blockfrost = new BlockFrostAPI({
+export const blockfrost = new BlockFrostAPI({
   projectId: blockFrostApiKey,
   isTestnet: devMode,
 })
@@ -17,7 +17,10 @@ const blockfrost = new BlockFrostAPI({
 let receivedPayments: { [txHash: string]: receivedPayment } = {}
 
 export async function checkUTXOs() {
-  const utxos: utxo[] = cardano.queryUtxo(wallet.paymentAddr)
+  try {
+      const utxos = await blockfrost.addressesUtxos(wallet.paymentAddr)
+      const hashes = utxos.map((utxo) => utxo.tx_hash)
+
   logger.log({
     level: 'verbose',
     message: 'Status:',
@@ -27,10 +30,10 @@ export async function checkUTXOs() {
     type: 'status',
   })
 
-  utxos.forEach(async (utxo) => {
-    if (receivedPayments[utxo.txHash]) return
-    try {
-      const tx = await blockfrost.txsUtxos(utxo.txHash)
+  hashes.forEach(async (hash) => {
+    if (receivedPayments[hash]) return
+    
+      const tx = await blockfrost.txsUtxos(hash)
       const newPayment = { amount: 0, payer: '' }
       tx.outputs.forEach((output) => {
         if (output.address === wallet.paymentAddr) {
@@ -40,23 +43,24 @@ export async function checkUTXOs() {
           newPayment.payer = tx.inputs[0].address
         }
       })
-      receivedPayments[utxo.txHash] = newPayment
+      receivedPayments[hash] = newPayment
       logger.log({ message: 'New payment received', payment: newPayment, level: 'verbose' })
       payments.insertOne(newPayment)
       checkPayment(
         newPayment,
         requests.filter((r) => r.status !== 'minted')
       )
-    } catch (error) {
-      logger.log({
-        level: 'error',
-        message: 'Error while processing UTXO',
-        error: error,
-        type: 'error',
-      })
-    }
+    
   })
-  setTimeout(checkUTXOs, 5000)
+} catch (error) {
+  logger.log({
+    level: 'error',
+    message: 'Error while processing UTXO',
+    error: error,
+    type: 'error',
+  })
+}
+setTimeout(checkUTXOs, 5000)
 }
 
 function checkPayment(payment: receivedPayment, openRequests: mintParams[]) {

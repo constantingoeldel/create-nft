@@ -1,8 +1,8 @@
 import { nanoid } from 'nanoid'
 import { renameSync } from 'fs'
 import crypto from 'crypto'
-
-import { bearer, devMode, requests } from '../server.js'
+import { devMode } from '../app.js'
+import { bearer, requests } from '../server.js'
 import { requests as requestsDB } from '../db.js'
 import logger from '../logging.js'
 
