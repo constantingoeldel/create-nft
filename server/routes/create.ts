@@ -3,6 +3,7 @@ import { nanoid } from 'nanoid'
 import { cardano, handleMint } from '../server.js'
 import { customers, requests as requestsDB } from '../db.js'
 import logger from '../logging.js'
+import { blockfrost } from '../utxos.js'
 
 // @ts-ignore
 export default async function create(req, res) {
@@ -32,7 +33,9 @@ export default async function create(req, res) {
     return
   }
   const customerWallet = cardano.wallet(customer.id)
-  const sufficientBalance: boolean = customerWallet.balance().value.lovelace > 2_000_000
+ // const sufficientBalance: boolean = customerWallet.balance().value.lovelace > 2_000_000
+ const balance = await blockfrost.addressesTotal(customerWallet.address)
+ const sufficientBalance : boolean = Number(balance.received_sum[0].quantity) -Number( balance.sent_sum[0].quantity) > 2_000_000
   if (!sufficientBalance) {
     logger.info('Insufficient balance')
     res

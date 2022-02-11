@@ -19,7 +19,10 @@ const receivingAddr: string = process.env.DEV!
   : process.env.STANDARD_ADDR!
 
 export async function mint({ walletId, type, properties, file, amount, addr, price }: mintParams) {
-  const tip: number = cardano.queryTip().slot
+  const latestBlock = await blockfrost.blocksLatest()
+  if (typeof latestBlock.slot !== 'number') {throw new Error("No latest block")};
+
+  const tip: number = latestBlock.slot 
   const wallet = cardano.wallet(walletId)
 
   const assetName = properties.name
